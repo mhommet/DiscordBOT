@@ -32,6 +32,10 @@ MAGIC_COOLDOWN_TIME: Final[int] = 3600
 with open('citations.txt', 'r', encoding='utf-8') as f:
     quotes = [line.strip() for line in f]
 
+# Insultes
+with open('insultes.txt', 'r', encoding='utf-8') as f:
+    insults = [line.strip() for line in f]
+
 # Remove the built-in help command
 client.remove_command("help")
 
@@ -55,11 +59,23 @@ async def send_message(message: Message, user_message: str) -> None:
 async def on_ready() -> None:
     print(f'{client.user} connected')
 
+paul = 440920053051818004
+async def isPaul(ctx, id):
+    if id == paul:
+        await ctx.send(random.choice(insults))
+        return True
+    else: 
+        return False
+
 # Define commands with names and descriptions
 @client.command(name="roulette", description="Roulette russe (5s de cooldown)")
 async def roulette(ctx):
     if ctx.author.name in roulette_cooldown and time.time() - roulette_cooldown[ctx.author.name] < COOLDOWN_TIME:
         await ctx.channel.send(f'Cooldown ! Tu dois attendre {COOLDOWN_TIME - int(time.time() - roulette_cooldown[ctx.author.name])} secondes...')
+        return
+
+    # Check if the user is paul
+    if await isPaul(ctx, ctx.author.id):
         return
 
     if random.randint(0, 5) == 0:
@@ -77,8 +93,10 @@ async def magic(ctx):
         await ctx.channel.send(f'Cooldown ! Tu dois attendre {MAGIC_COOLDOWN_TIME - int(time.time() - magic_last_used)} secondes...')
         return
 
+    # Check if the user is paul
+    if await isPaul(ctx, ctx.author.id):
+        return
     
-
     # Kick a random member from the voice channel
     if ctx.author.voice and ctx.author.voice.channel:
         members = ctx.author.voice.channel.members
@@ -92,6 +110,9 @@ async def magic(ctx):
 
 @client.command(name="k2a", description="Envoie une citation de Kaaris")
 async def quote(ctx):
+    # Check if the user is paul
+    if await isPaul(ctx, ctx.author.id):
+        return
     await ctx.send(random.choice(quotes))
 
 # Help command
@@ -99,6 +120,14 @@ async def quote(ctx):
 async def help(ctx):
     commands_list = "\n".join([f"- {command.name}: {command.description}" for command in client.commands])
     await ctx.channel.send(f'Liste des commandes disponibles:\n{commands_list}')
+
+@client.command(name='ano', description='Envoie un message anonyme')
+async def echo_delete(ctx, *, message):
+    # Check if the user is paul
+    if await isPaul(ctx, ctx.author.id):
+        return
+    await ctx.message.delete()
+    await ctx.send(message)
 
 # Music
 
@@ -134,15 +163,14 @@ class YTDLSource(discord.PCMVolumeTransformer):
             data = data['entries'][0]
         fileName = data['url'] if stream else ytdl.prepare_filename(data)
         return cls(discord.FFmpegPCMAudio(fileName, **ffmpeg_options), data=data), data['title']
-    
+
 async def join(ctx):
     if not ctx.message.author.voice:
         return
     else:
         channel = ctx.message.author.voice.channel
     await channel.connect()
-    
-@client.command(name='leave', description='Leaves the voice channel')
+
 async def leave(ctx):
     voice_client = ctx.message.guild.voice_client
     if voice_client.is_connected():
@@ -184,7 +212,7 @@ async def pause(ctx):
         await voice_client.pause()
     else:
         await ctx.send("Je ne suis pas en train de jouer de la musique.")
-    
+
 @client.command(name='resume', description='Remet en route la musique')
 async def resume(ctx):
     voice_client = ctx.message.guild.voice_client
@@ -192,7 +220,7 @@ async def resume(ctx):
         await voice_client.resume()
     else:
         await ctx.send("Je ne joue pas de musique. Utilise la commande play")
-        
+
 @client.command(name='stop', description='Arrête la musique')
 async def stop(ctx):
     voice_client = ctx.message.guild.voice_client

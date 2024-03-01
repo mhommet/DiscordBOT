@@ -1,16 +1,15 @@
-import asyncio
 import os
 import time
 from typing import Final
 
-import discord
 import random2 as random
-import yt_dlp as youtube_dl
 from discord import Client, Intents, Message
 from discord.ext import commands
 from dotenv import load_dotenv
 
 from responses import get_response
+
+from music_cog import music_cog
 
 # Token
 load_dotenv()
@@ -59,6 +58,7 @@ async def send_message(message: Message, user_message: str) -> None:
 # Starting bot
 @client.event
 async def on_ready() -> None:
+    await client.add_cog(music_cog(client))
     print(f'{client.user} connected')
 
 # Define commands with names and descriptions
@@ -102,14 +102,14 @@ async def quote(ctx):
 @client.command(name="help", description="Affiche la liste des commandes")
 async def help(ctx):
     commands_list = "\n".join([f"- {command.name}: {command.description}" for command in client.commands])
-    await ctx.channel.send(f'Liste des commandes disponibles:\n{commands_list}')
+    await ctx.channel.send(f"```Liste des commandes disponibles:\n{commands_list}```")
 
 @client.command(name='ano', description='Envoie un message anonyme')
 async def echo_delete(ctx, *, message):
     await ctx.message.delete()
     await ctx.send(message)
 
-@client.command(name='insulte', description='Insulte un membre du serveur')
+@client.command(name='insult', description='Insulte un membre du serveur')
 async def insult(ctx, *, message):
     # Get the identified user in the message
     if len(ctx.message.mentions) > 0:
@@ -118,109 +118,6 @@ async def insult(ctx, *, message):
         await ctx.send(random.choice(insults) + " " + ctx.message.mentions[0].mention)
     else:
         await ctx.send("Tu dois mentionner un membre du serveur")
-
-# Music
-
-youtube_dl.utils.bug_reports_message = lambda: ''
-ytdl_format_options = {
-    'format': 'bestaudio/best',
-    'restrictfilenames': True,
-    'noplaylist': True,
-    'nocheckcertificate': True,
-    'ignoreerrors': False,
-    'logtostderr': False,
-    'quiet': True,
-    'no_warnings': True,
-    'default_search': 'auto',
-    'source_address': '0.0.0.0' # bind to ipv4 since ipv6 addresses cause issues sometimes
-}
-ffmpeg_options = {
-    'options': '-vn'
-}
-ytdl = youtube_dl.YoutubeDL(ytdl_format_options)
-class YTDLSource(discord.PCMVolumeTransformer):
-    def __init__(self, source, *, data, volume=0.5):
-        super().__init__(source, volume)
-        self.data = data
-        self.title = data.get('title')
-        self.url = ""
-    @classmethod
-    async def from_url(cls, url, *, loop=None, stream=False):
-        loop = loop or asyncio.get_event_loop()
-        data = await loop.run_in_executor(None, lambda: ytdl.extract_info(url, download=not stream))
-        if 'entries' in data:
-            # take first item from a playlist
-            data = data['entries'][0]
-        fileName = data['url'] if stream else ytdl.prepare_filename(data)
-        return cls(discord.FFmpegPCMAudio(fileName, **ffmpeg_options), data=data), data['title']
-
-async def join(ctx):
-    if not ctx.message.author.voice:
-        return
-    else:
-        channel = ctx.message.author.voice.channel
-    await channel.connect()
-
-async def leave(ctx):
-    voice_client = ctx.message.guild.voice_client
-    if voice_client.is_connected():
-        await voice_client.disconnect()
-    else:
-        await ctx.send("The bot is not connected to a voice channel.")
-
-@client.command(name='play', description='Joue de la musique depuis une url youtube')
-async def play(ctx,url):
-    await join(ctx)
-    try :
-        server = ctx.message.guild
-        voice_channel = server.voice_client
-        async with ctx.typing():
-            try :
-                player, title = await YTDLSource.from_url(url, loop=client.loop)
-                async def delete_file(error):
-                    try:
-                        await discord.VoiceClient.cleanup(voice_channel)
-                        os.remove(player.source.original)
-                        await leave(ctx)
-                    except Exception as e:
-                        print("Error while deleting file: ", e)
-                try:
-                    voice_channel.play(player, after=delete_file)
-                except Exception as e:
-                    delete_file(None)
-                    raise e
-                await ctx.send('**Lecture en cours:** {}'.format(title))
-            except Exception as e:
-                await ctx.send('Une erreur est survenue: {}'.format(str(e)))
-    except Exception:
-        await ctx.send("Je ne suis pas dans un channel vocal.")
-
-@client.command(name='pause', description='Met en pause la musique')
-async def pause(ctx):
-    voice_client = ctx.message.guild.voice_client
-    if voice_client.is_playing():
-        await voice_client.pause()
-    else:
-        await ctx.send("Je ne suis pas en train de jouer de la musique.")
-
-@client.command(name='resume', description='Remet en route la musique')
-async def resume(ctx):
-    voice_client = ctx.message.guild.voice_client
-    if voice_client.is_paused():
-        await voice_client.resume()
-    else:
-        await ctx.send("Je ne joue pas de musique. Utilise la commande play")
-
-@client.command(name='stop', description='Arrête la musique')
-async def stop(ctx):
-    voice_client = ctx.message.guild.voice_client
-    if voice_client.is_playing():
-        voice_client.stop()
-        await discord.VoiceClient.cleanup(voice_client)
-        os.remove(voice_client.source.original)
-        await leave(ctx)
-    else:
-        await ctx.send("Je ne suis pas en train de jouer de la musique.")
 
 # Entry point
 def main() -> None:

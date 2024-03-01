@@ -1,5 +1,5 @@
 discord
 python-dotenv
 random2
-youtube-dl
+yt-dlp==2024.2.29.232658.dev0
 https://github.com/yt-dlp/yt-dlp/archive/master.tar.gz

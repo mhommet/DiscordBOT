@@ -1,5 +1,13 @@
 # KomradeBOT (FR)
 
+## Fonctionnalités
+
+-> Musique (Lecture depuis youtube)
+
+-> Commandes funs
+
+-> D'autres commandes utilitaires, d'administration et fun a venir...
+
 ## Liste des commandes disponibles:
 ```
 - $magic: Fais disparaitre quelqun du channel vocal (1h de cooldown)

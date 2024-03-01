@@ -110,9 +110,11 @@ async def echo_delete(ctx, *, message):
     await ctx.send(message)
 
 @client.command(name='insulte', description='Insulte un membre du serveur')
-async def insult(ctx):
+async def insult(ctx, *, message):
     # Get the identified user in the message
     if len(ctx.message.mentions) > 0:
+        # Delete the message that triggered the command
+        await ctx.message.delete()
         await ctx.send(random.choice(insults) + " " + ctx.message.mentions[0].mention)
     else:
         await ctx.send("Tu dois mentionner un membre du serveur")

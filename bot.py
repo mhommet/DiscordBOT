@@ -3,11 +3,9 @@ import time
 from typing import Final
 
 import random2 as random
-from discord import Client, Intents, Message
+from discord import Client, Intents
 from discord.ext import commands
 from dotenv import load_dotenv
-
-from responses import get_response
 
 from music_cog import music_cog
 
@@ -39,21 +37,6 @@ with open('insultes.txt', 'r', encoding='utf-8') as f:
 
 # Remove the built-in help command
 client.remove_command("help")
-
-# Message event
-async def send_message(message: Message, user_message: str) -> None:
-    if not user_message:
-        print('Message is empty')
-        return
-
-    if is_private := user_message[0] == '?':
-        user_message = user_message[1:]
-
-    try:
-        response: str = get_response(user_message)
-        await message.author.send(response) if is_private else message.channel.send(response)
-    except Exception as e:
-        print('Error:', e)
 
 # Starting bot
 @client.event

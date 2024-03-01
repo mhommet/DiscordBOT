@@ -34,6 +34,7 @@ class music_cog(commands.Cog):
             self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next())
         else:
             self.is_playing = False
+            self.client.loop.create_task(self.vc.disconnect())
 
     async def play_music(self, ctx):
         if len(self.music_queue) > 0:

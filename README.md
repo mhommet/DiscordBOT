@@ -24,7 +24,7 @@ python3 bot.py
 
 -> D'autres commandes utilitaires, d'administration et fun a venir...
 
-## Liste des commandes disponibles:
+#### Liste des commandes disponibles:
 ```
 - $magic: Fais disparaitre quelqun du channel vocal (1h de cooldown)
 - $clear: Stop la musique et vide la file d'attente

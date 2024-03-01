@@ -1,7 +1,7 @@
-# KomradeBOT
-A discord bot made for fun.
+# KomradeBOT (FR)
 
-(FR) Liste des commandes disponibles:
+## Liste des commandes disponibles:
+```
 - magic: Tour de magie... (1h de cooldown)
 - clear: Stop la musique et vide la file d'attente
 - skip: Passe à la musique suivante
@@ -15,3 +15,4 @@ A discord bot made for fun.
 - roulette: Roulette russe (5s de cooldown)
 - insult: Insulte un membre du serveur
 - pause: Met en pause la musique
+```

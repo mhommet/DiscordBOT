@@ -1,5 +1,21 @@
 # KomradeBOT (FR)
 
+## FFMPEG
+
+Sur windows le .exe est inclus dans le projet, sur Linux il faut l'installer [ICI](https://www.ffmpeg.org/download.html).
+
+# Installation des dépendances
+
+```
+pip install -r requirements.txt
+```
+
+## Lancement 
+
+```
+python3 bot.py
+```
+
 ## Fonctionnalités
 
 -> Musique (Lecture depuis youtube)

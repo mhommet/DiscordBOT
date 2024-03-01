@@ -1,14 +1,16 @@
-from typing import Final
+import asyncio
 import os
 import time
-import random2 as random
-from dotenv import load_dotenv
-from discord import Intents, Client, Message
+from typing import Final
+
 import discord
-import asyncio
-from responses import get_response
-from discord.ext import commands, tasks
+import random2 as random
 import yt_dlp as youtube_dl
+from discord import Client, Intents, Message
+from discord.ext import commands
+from dotenv import load_dotenv
+
+from responses import get_response
 
 # Token
 load_dotenv()
@@ -59,23 +61,11 @@ async def send_message(message: Message, user_message: str) -> None:
 async def on_ready() -> None:
     print(f'{client.user} connected')
 
-paul = 440920053051818004
-async def isPaul(ctx, id):
-    if id == paul:
-        await ctx.send(random.choice(insults))
-        return True
-    else: 
-        return False
-
 # Define commands with names and descriptions
 @client.command(name="roulette", description="Roulette russe (5s de cooldown)")
 async def roulette(ctx):
     if ctx.author.name in roulette_cooldown and time.time() - roulette_cooldown[ctx.author.name] < COOLDOWN_TIME:
         await ctx.channel.send(f'Cooldown ! Tu dois attendre {COOLDOWN_TIME - int(time.time() - roulette_cooldown[ctx.author.name])} secondes...')
-        return
-
-    # Check if the user is paul
-    if await isPaul(ctx, ctx.author.id):
         return
 
     if random.randint(0, 5) == 0:
@@ -93,10 +83,6 @@ async def magic(ctx):
         await ctx.channel.send(f'Cooldown ! Tu dois attendre {MAGIC_COOLDOWN_TIME - int(time.time() - magic_last_used)} secondes...')
         return
 
-    # Check if the user is paul
-    if await isPaul(ctx, ctx.author.id):
-        return
-    
     # Kick a random member from the voice channel
     if ctx.author.voice and ctx.author.voice.channel:
         members = ctx.author.voice.channel.members
@@ -110,9 +96,6 @@ async def magic(ctx):
 
 @client.command(name="k2a", description="Envoie une citation de Kaaris")
 async def quote(ctx):
-    # Check if the user is paul
-    if await isPaul(ctx, ctx.author.id):
-        return
     await ctx.send(random.choice(quotes))
 
 # Help command
@@ -123,11 +106,16 @@ async def help(ctx):
 
 @client.command(name='ano', description='Envoie un message anonyme')
 async def echo_delete(ctx, *, message):
-    # Check if the user is paul
-    if await isPaul(ctx, ctx.author.id):
-        return
     await ctx.message.delete()
     await ctx.send(message)
+
+@client.command(name='insulte', description='Insulte un membre du serveur')
+async def insult(ctx):
+    # Get the identified user in the message
+    if len(ctx.message.mentions) > 0:
+        await ctx.send(random.choice(insults) + " " + ctx.message.mentions[0].mention)
+    else:
+        await ctx.send("Tu dois mentionner un membre du serveur")
 
 # Music
 
@@ -202,7 +190,7 @@ async def play(ctx,url):
                 await ctx.send('**Lecture en cours:** {}'.format(title))
             except Exception as e:
                 await ctx.send('Une erreur est survenue: {}'.format(str(e)))
-    except:
+    except Exception:
         await ctx.send("Je ne suis pas dans un channel vocal.")
 
 @client.command(name='pause', description='Met en pause la musique')

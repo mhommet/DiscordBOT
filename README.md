@@ -2,7 +2,7 @@
 
 ## Liste des commandes disponibles:
 ```
-- $magic: Tour de magie... (1h de cooldown)
+- $magic: Fais disparaitre quelqun du channel vocal (1h de cooldown)
 - $clear: Stop la musique et vide la file d'attente
 - $skip: Passe à la musique suivante
 - $k2a: Envoie une citation de Kaaris

@@ -21,12 +21,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Deploy
-        uses: appleboy/ssh-action@master
-        with:
-          host: '${{ secrets.VPS_HOST }}'
-          username: '${{ secrets.VPS_USERNAME }}'
-
-      - name: Run commands on VPS (after manual SSH setup)
+      - name: Run commands on VPS (using existing SSH setup)
         run: |
           nohup python bot.py &

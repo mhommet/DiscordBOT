@@ -46,7 +46,8 @@ class music_cog(commands.Cog):
             if not self.is_skipping:
                 if not self.vc.is_playing():
                     self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next() if not self.is_skipping else None)
-                    self.client.loop.create_task(self.send_playing_message(m_title))  # Send a message to the channel
+                    ctx = self.music_queue[0][2]
+                    self.client.loop.create_task(self.send_playing_message(m_title, ctx))  # Send a message to the channel
 
             else:
                 self.client.loop.create_task(self.wait_and_play_next())
@@ -55,12 +56,8 @@ class music_cog(commands.Cog):
             self.is_playing = False
             self.client.loop.create_task(self.wait_and_disconnect())
        
-    async def send_playing_message(self, title):
-        for guild in self.client.guilds:
-            for channel in guild.text_channels:
-                if channel.permissions_for(guild.me).send_messages:
-                    await channel.send(f"Lecture en cours de : ```{title}```")
-                    break
+    async def send_playing_message(self, title, ctx):
+        await ctx.send(f"Lecture en cours de : ```{title}```")
          
     async def wait_and_disconnect(self):
         await asyncio.sleep(120)
@@ -99,7 +96,7 @@ class music_cog(commands.Cog):
             self.music_queue.pop(0)
 
             self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next())
-            await self.send_playing_message(m_title)
+            await self.send_playing_message(m_title, ctx)
         else:
             self.is_playing = False
 
@@ -119,10 +116,10 @@ class music_cog(commands.Cog):
                 if isinstance(songs, list):
                     for song in songs:
                         if isinstance(song, dict):
-                            self.music_queue.append([song, ctx.author.voice])
+                            self.music_queue.append([song, ctx.author.voice, ctx])
                     await ctx.send("Musiques ajoutées à la file d'attente")
                 elif isinstance(songs, dict):
-                    self.music_queue.append([songs, ctx.author.voice])
+                    self.music_queue.append([songs, ctx.author.voice, ctx])
                     await ctx.send("Musique ajoutée à la file d'attente")
                 if self.is_playing == False:
                     await self.play_music(ctx)

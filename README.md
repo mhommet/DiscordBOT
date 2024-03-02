@@ -1,12 +1,10 @@
 # KomradeBOT (FR)
 
-## Installation
+## Installation et lancement
 
 Définir les variables d'environnement dans un fichier .env -> comme l'exemple dans le .env.example
 
-```docker build -t komradebot .```
-
-```docker run --network="host" komradebot```
+```docker compose up -d --build```
 
 ## Fonctionnalités
 

@@ -11,7 +11,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up Python (adjust version if needed)
+      - name: Set up Python
         uses: actions/setup-python@v3
         with:
           python-version: '3.8'
@@ -26,7 +26,7 @@ jobs:
         with:
           host: '${{ secrets.VPS_HOST }}'
           username: '${{ secrets.VPS_USERNAME }}'
-          script: |
-            cd <your_bot_directory_name>  # Replace with your bot's directory on the VPS
-            source .env  # Load environment variables from your .env file
-            nohup python bot.py &  # Run the bot in the background
+
+      - name: Run commands on VPS (after manual SSH setup)
+        run: |
+          nohup python bot.py &

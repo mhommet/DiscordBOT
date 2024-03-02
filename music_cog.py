@@ -78,11 +78,15 @@ class music_cog(commands.Cog):
             self.vs.resume()
         else:
             songs = self.search_yt(query)
-            if type(songs) == type(True):
+            if songs is False:
                 await ctx.send("Je n'ai pas pu trouver la musique. Assurez-vous que l'url de la musique est correcte.")
             else:
-                for song in songs:
-                    self.music_queue.append([song, ctx.author.voice])
+                if isinstance(songs, list):
+                    for song in songs:
+                        if isinstance(song, dict):
+                            self.music_queue.append([song, ctx.author.voice])
+                elif isinstance(songs, dict): 
+                        self.music_queue.append([song, ctx.author.voice])
                 await ctx.send("Musique ajoutée à la file d'attente")
                 if self.is_playing == False:
                     await self.play_music(ctx)

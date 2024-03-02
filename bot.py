@@ -1,12 +1,10 @@
 import os
 import time
 from typing import Final
-
 import random2 as random
 from discord import Client, Intents
 from discord.ext import commands
 from dotenv import load_dotenv
-
 from music_cog import music_cog
 
 # Token

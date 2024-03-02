@@ -1,4 +1,4 @@
-name: Deploy to VPS
+name: Deploy
 
 on:
   push:
@@ -13,21 +13,40 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Copy files to VPS
-      uses: appleboy/scp-action@master
-      with:
-        host: ${{ secrets.VPS_HOST }}
-        username: ${{ secrets.VPS_USERNAME }}
-        key: ${{ secrets.VPS_SSH_KEY }}
-        source: "."
-        target: "/komradebot"
-
-    - name: Build and run Docker container on VPS
+    - name: Stop and remove existing Docker containers on VPS
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.VPS_HOST }}
         username: ${{ secrets.VPS_USERNAME }}
         key: ${{ secrets.VPS_SSH_KEY }}
         script: |
-          cd /komradebot
-          docker compose up -d --build
+          docker-compose -f /home/komradebot/komradebot/docker-compose.yml down
+          rm -rf /home/komradebot/komradebot
+
+    - name: Copy files to server
+      uses: appleboy/scp-action@master
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USERNAME }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        source: "."
+        target: "/home/komradebot/komradebot"
+
+    - name: Set .env variables
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USERNAME }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        script: |
+          cp /home/komradebot/.env /home/komradebot/komradebot/.env
+
+    - name: Run bot
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.VPS_HOST }}
+        username: ${{ secrets.VPS_USERNAME }}
+        key: ${{ secrets.VPS_SSH_KEY }}
+        script: |
+          cd /home/komradebot/komradebot
+          docker-compose up -d --build

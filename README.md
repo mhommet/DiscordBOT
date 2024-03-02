@@ -1,20 +1,12 @@
 # KomradeBOT (FR)
 
-## FFMPEG
+## Installation
 
-Sur windows le .exe est inclus dans le projet, sur Linux il faut l'installer [ICI](https://www.ffmpeg.org/download.html).
+Définir les variables d'environnement dans un fichier .env -> comme l'exemple dans le .env.example
 
-# Installation des dépendances
+```docker build -t komradebot .```
 
-```
-pip install -r requirements.txt
-```
-
-## Lancement 
-
-```
-python3 bot.py
-```
+```docker run --network="host" komradebot```
 
 ## Fonctionnalités
 

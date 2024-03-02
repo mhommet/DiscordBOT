@@ -13,14 +13,14 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
 
-    - name: Stop and remove existing Docker containers on VPS
+    - name: Stop and remove existing Docker containers on server
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.VPS_HOST }}
         username: ${{ secrets.VPS_USERNAME }}
         key: ${{ secrets.VPS_SSH_KEY }}
         script: |
-          docker-compose -f /home/komradebot/komradebot/docker-compose.yml down
+          docker compose -f /home/komradebot/komradebot/docker-compose.yml down
           rm -rf /home/komradebot/komradebot
 
     - name: Copy files to server

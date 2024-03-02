@@ -28,6 +28,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Run bot
-      run: python bot.py
+      run: |
+        nohup python bot.py &
       env:
         TOKEN: ${{ secrets.TOKEN }}

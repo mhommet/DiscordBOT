@@ -30,4 +30,4 @@ jobs:
         key: ${{ secrets.VPS_SSH_KEY }}
         script: |
           cd /komradebot
-          docker-compose up -d --build
+          docker compose up -d --build

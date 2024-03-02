@@ -1,5 +1,7 @@
 # KomradeBOT (FR)
 
+![komradebot](https://github.com/Milan144/KomradeBOT/assets/75842903/8afbfd18-83e7-4522-b528-19e75d980eca)
+
 ## Installation et lancement
 
 Définir les variables d'environnement dans un fichier .env -> comme l'exemple dans le .env.example

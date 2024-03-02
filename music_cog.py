@@ -39,19 +39,29 @@ class music_cog(commands.Cog):
             self.is_playing = True
 
             m_url = self.music_queue[0][0]['source']
+            m_title = self.music_queue[0][0]['title']
 
             self.music_queue.pop(0)
 
             if not self.is_skipping:
                 if not self.vc.is_playing():
                     self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next() if not self.is_skipping else None)
+                    self.client.loop.create_task(self.send_playing_message(m_title))  # Send a message to the channel
+
             else:
                 self.client.loop.create_task(self.wait_and_play_next())
                 
         else:
             self.is_playing = False
             self.client.loop.create_task(self.wait_and_disconnect())
-            
+       
+    async def send_playing_message(self, title):
+        for guild in self.client.guilds:
+            for channel in guild.text_channels:
+                if channel.permissions_for(guild.me).send_messages:
+                    await channel.send(f"Lecture en cours de : ```{title}```")
+                    break
+         
     async def wait_and_disconnect(self):
         await asyncio.sleep(120)
         if not self.is_playing:
@@ -74,6 +84,7 @@ class music_cog(commands.Cog):
         if len(self.music_queue) > 0:
             self.is_playing = True
             m_url = self.music_queue[0][0]['source']
+            m_title = self.music_queue[0][0]['title']
 
             if self.vc == None or not self.vc.is_connected():
                 self.vc = await self.music_queue[0][1].channel.connect()
@@ -88,7 +99,7 @@ class music_cog(commands.Cog):
             self.music_queue.pop(0)
 
             self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next())
-
+            await self.send_playing_message(m_title)
         else:
             self.is_playing = False
 

@@ -28,7 +28,7 @@ python3 bot.py
 
 **Musique**
 ```
-$play <url>: Joue de la musique depuis Youtube
+$play <url>/<nom de la musique>: Joue de la musique depuis Youtube
 $queue: Montre la file d'attente
 $pause: Met en pause la musique
 $resume: Remet en route la musique

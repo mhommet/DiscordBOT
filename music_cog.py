@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 from yt_dlp import YoutubeDL
+import asyncio
 
 class music_cog(commands.Cog):
     def __init__(self, client):
@@ -10,7 +11,7 @@ class music_cog(commands.Cog):
         self.is_paused = False
 
         self.music_queue = []
-        self.YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist':'True'}
+        self.YDL_OPTIONS = {'format': 'bestaudio', 'noplaylist':'False'}
         self.FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
 
         self.vc = None
@@ -34,7 +35,13 @@ class music_cog(commands.Cog):
             self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next())
         else:
             self.is_playing = False
-            self.client.loop.create_task(self.vc.disconnect())
+            self.client.loop.create_task(self.wait_and_disconnect())
+            
+    async def wait_and_disconnect(self):
+        await asyncio.sleep(120)
+        if not self.is_playing:
+            await self.vc.disconnect()
+            self.vc = None
 
     async def play_music(self, ctx):
         if len(self.music_queue) > 0:

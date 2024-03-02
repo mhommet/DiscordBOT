@@ -20,9 +20,12 @@ class music_cog(commands.Cog):
         with YoutubeDL(self.YDL_OPTIONS) as ydl:
             try:
                 info = ydl.extract_info("ytsearch:%s" % item, download=False)['entries'][0]
+                if '_type' in info and info['_type'] == 'playlist':
+                    return [{'source': song['url'], 'title': song['title']} for song in info['entries']]
+                else:
+                    return {'source': info['url'], 'title': info['title']}
             except Exception:
                 return False
-        return {'source': info['url'], 'title': info['title']}
 
     def play_next(self):
         if len(self.music_queue) > 0:
@@ -74,13 +77,13 @@ class music_cog(commands.Cog):
         elif self.is_paused:
             self.vs.resume()
         else:
-            song = self.search_yt(query)
-            if type(song) == type(True):
+            songs = self.search_yt(query)
+            if type(songs) == type(True):
                 await ctx.send("Je n'ai pas pu trouver la musique. Assurez-vous que l'url de la musique est correcte.")
             else:
+                for song in songs:
+                    self.music_queue.append([song, ctx.author.voice])
                 await ctx.send("Musique ajoutée à la file d'attente")
-                self.music_queue.append([song, ctx.author.voice])
-
                 if self.is_playing == False:
                     await self.play_music(ctx)
 

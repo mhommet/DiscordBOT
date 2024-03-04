@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from yt_dlp import YoutubeDL
 import asyncio
+import random
 
 class music_cog(commands.Cog):
     def __init__(self, client):
@@ -23,11 +24,14 @@ class music_cog(commands.Cog):
                 info = ydl.extract_info(item, download=False)
                 if '_type' in info and info['_type'] == 'playlist':
                     songs = []
+                    total_songs = len(info['entries'])
                     for song in info['entries']:
                         try:
                             songs.append({'source': song['url'], 'title': song['title']})
                         except Exception:
                             continue
+                    # Shuffle the songs
+                    random.shuffle(songs)
                     return songs
                 else:
                     return {'source': info['url'], 'title': info['title']}
@@ -35,7 +39,7 @@ class music_cog(commands.Cog):
                 return None
 
     def play_next(self):
-        if len(self.music_queue) > 0:
+        if len(self.music_queue) > 0 and self.vc and self.vc.is_connected():
             self.is_playing = True
 
             m_url = self.music_queue[0][0]['source']
@@ -70,10 +74,11 @@ class music_cog(commands.Cog):
         self.is_skipping = False
         self.play_next()
 
-    async def play_music(self, ctx):
+    async def play_music(self, ctx, pop_first=True):
         try:
-            if self.vc is None or not self.vc.is_connected():
-                self.vc = await self.music_queue[0][1].channel.connect()
+            if self.vc is not None and self.vc.is_connected():
+                await self.vc.disconnect()
+            self.vc = await self.music_queue[0][1].channel.connect()
         except Exception as e:
             print(f"An error occurred while connecting to the voice channel: {e}")
             return
@@ -93,13 +98,26 @@ class music_cog(commands.Cog):
             else:
                 await self.vc.move_to(self.music_queue[0][1].channel)
 
-            self.music_queue.pop(0)
+            if pop_first:
+                self.music_queue.pop(0)
 
             self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next())
             await self.send_playing_message(m_title, ctx)
         else:
             self.is_playing = False
 
+    @commands.command(name="play_song", description="Joue une chanson spécifique de la file d'attente (ex: /play_song 3)")
+    async def play_song(self, ctx, song_number: int):
+        print(f"Playing song number {song_number}")
+        if len(self.music_queue) >= song_number > 0:
+            song = self.music_queue.pop(song_number - 1)
+            self.music_queue.insert(0, song)
+            if self.vc != None and self.vc.is_playing():
+                self.vc.stop()
+            await self.play_music(ctx, pop_first=False)
+        else:
+            await ctx.send("Le numéro de la chanson est invalide.")
+            
     @commands.command(name="play", aliases=["p", "playing"], description="Joue de la musique depuis Youtube")
     async def play(self, ctx, *args):
         query = " ".join(args)
@@ -154,13 +172,12 @@ class music_cog(commands.Cog):
     @commands.command(name="queue", aliases=["q"], description="Montre la file d'attente")
     async def queue(self, ctx):
         if len(self.music_queue) > 0:
-            retval = "```\n"
-
-            for i in range(min(10, len(self.music_queue))):
-                retval += f"- {self.music_queue[i][0]['title']}\n"
-
-            retval += "```"
-            await ctx.send(retval)
+            for i in range(0, len(self.music_queue), 10):
+                retval = "```\n"
+                for j in range(i, min(i + 10, len(self.music_queue))):
+                    retval += f"{j + 1} - {self.music_queue[j][0]['title']}\n"
+                retval += "```"
+                await ctx.send(retval)
         else:
             await ctx.send("La file d'attente est vide.")
 

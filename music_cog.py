@@ -25,7 +25,6 @@ class music_cog(commands.Cog):
                 info = ydl.extract_info(item, download=False)
                 if '_type' in info and info['_type'] == 'playlist':
                     songs = []
-                    total_songs = len(info['entries'])
                     for song in info['entries']:
                         try:
                             songs.append({'source': song['url'], 'title': song['title']})
@@ -49,7 +48,7 @@ class music_cog(commands.Cog):
             self.music_queue.pop(0)
 
             if not self.is_skipping:
-                if not self.vc.is_playing():
+                if self.vc is not None and self.vc.is_connected() and not self.vc.is_playing():
                     self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next() if not self.is_skipping else None)
                     ctx = self.music_queue[0][2]
                     self.client.loop.create_task(self.send_playing_message(m_title, ctx))  # Send a message to the channel

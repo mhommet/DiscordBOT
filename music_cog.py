@@ -18,7 +18,8 @@ class music_cog(commands.Cog):
 
         self.vc = None
 
-    def search_yt(self, item):
+    async def search_yt(self, item, ctx):
+        await ctx.send("Recherche de la musique / de la playlist en cours...")
         with YoutubeDL(self.YDL_OPTIONS) as ydl:
             try:
                 info = ydl.extract_info(item, download=False)
@@ -55,20 +56,20 @@ class music_cog(commands.Cog):
 
             else:
                 self.client.loop.create_task(self.wait_and_play_next())
-                
+
         else:
             self.is_playing = False
             self.client.loop.create_task(self.wait_and_disconnect())
-       
+
     async def send_playing_message(self, title, ctx):
         await ctx.send(f"Lecture en cours de : ```{title}```")
-         
+ 
     async def wait_and_disconnect(self):
         await asyncio.sleep(120)
         if not self.is_playing:
             await self.vc.disconnect()
             self.vc = None
-            
+
     async def wait_and_play_next(self):
         await asyncio.sleep(1)
         self.is_skipping = False
@@ -82,7 +83,7 @@ class music_cog(commands.Cog):
         except Exception as e:
             print(f"An error occurred while connecting to the voice channel: {e}")
             return
-            
+
         if len(self.music_queue) > 0:
             self.is_playing = True
             m_url = self.music_queue[0][0]['source']
@@ -117,7 +118,7 @@ class music_cog(commands.Cog):
             await self.play_music(ctx, pop_first=False)
         else:
             await ctx.send("Le numéro de la chanson est invalide.")
-            
+
     @commands.command(name="play", aliases=["p", "playing"], description="Joue de la musique depuis Youtube")
     async def play(self, ctx, *args):
         query = " ".join(args)
@@ -127,7 +128,7 @@ class music_cog(commands.Cog):
         elif self.is_paused:
             self.vs.resume()
         else:
-            songs = self.search_yt(query)
+            songs = await self.search_yt(query, ctx)
             if songs is None:
                 await ctx.send("La musique n'est pas disponible.")
             else:

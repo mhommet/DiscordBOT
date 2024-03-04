@@ -79,6 +79,10 @@ class music_cog(commands.Cog):
             if self.vc is not None and self.vc.is_connected():
                 await self.vc.disconnect()
             self.vc = await self.music_queue[0][1].channel.connect()
+        except discord.errors.ConnectionClosed:
+            print("Connection closed, attempting to reconnect...")
+            await asyncio.sleep(5)
+            return await self.play_music(ctx, pop_first)
         except Exception as e:
             print(f"An error occurred while connecting to the voice channel: {e}")
             return

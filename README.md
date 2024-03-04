@@ -21,6 +21,7 @@ Définir les variables d'environnement dans un fichier .env -> comme l'exemple d
 **Musique**
 ```
 $play <url>/<nom de la musique>: Joue de la musique depuis Youtube
+$play_song <numero de la musique dans la file d'attente>
 $queue: Montre la file d'attente
 $pause: Met en pause la musique
 $resume: Remet en route la musique

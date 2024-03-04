@@ -156,7 +156,7 @@ class music_cog(commands.Cog):
         if len(self.music_queue) > 0:
             retval = "```\n"
 
-            for i in range(len(self.music_queue)):
+            for i in range(min(10, len(self.music_queue))):
                 retval += f"- {self.music_queue[i][0]['title']}\n"
 
             retval += "```"

@@ -24,6 +24,7 @@ class music_cog(commands.Cog):
                 info = ydl.extract_info(item, download=False)
                 if '_type' in info and info['_type'] == 'playlist':
                     songs = []
+                    total_songs = len(info['entries'])
                     for song in info['entries']:
                         try:
                             songs.append({'source': song['url'], 'title': song['title']})
@@ -38,7 +39,7 @@ class music_cog(commands.Cog):
                 return None
 
     def play_next(self):
-        if len(self.music_queue) > 0:
+        if len(self.music_queue) > 0 and self.vc and self.vc.is_connected():
             self.is_playing = True
 
             m_url = self.music_queue[0][0]['source']

@@ -39,7 +39,7 @@ class music_cog(commands.Cog):
                 return None
 
     def play_next(self):
-        if len(self.music_queue) > 0 and self.vc and self.vc.is_connected():
+        if len(self.music_queue) > 0:
             self.is_playing = True
 
             m_url = self.music_queue[0][0]['source']

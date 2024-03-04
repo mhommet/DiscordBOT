@@ -5,8 +5,7 @@ FROM python:3.9-slim-buster
 WORKDIR /app
 
 # Add ffmpeg and PyNaCl dependencies
-RUN apt-get update && apt-get install -y ffmpeg libffi-dev libnacl-dev
-
+RUN apt-get update && apt-get install -y ffmpeg libffi-dev libnacl-dev PyNaCl libsodium-dev
 # Copy the current directory contents into the container at /app
 COPY . /app
 

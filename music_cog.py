@@ -18,13 +18,13 @@ class music_cog(commands.Cog):
 
         self.vc = None
 
-    async def search_yt(self, item, ctx):
-        await ctx.send("Recherche de la musique / de la playlist en cours...")
+    def search_yt(self, item):
         with YoutubeDL(self.YDL_OPTIONS) as ydl:
             try:
                 info = ydl.extract_info(item, download=False)
                 if '_type' in info and info['_type'] == 'playlist':
                     songs = []
+                    total_songs = len(info['entries'])
                     for song in info['entries']:
                         try:
                             songs.append({'source': song['url'], 'title': song['title']})
@@ -39,7 +39,7 @@ class music_cog(commands.Cog):
                 return None
 
     def play_next(self):
-        if len(self.music_queue) > 0:
+        if len(self.music_queue) > 0 and self.vc and self.vc.is_connected():
             self.is_playing = True
 
             m_url = self.music_queue[0][0]['source']
@@ -48,27 +48,27 @@ class music_cog(commands.Cog):
             self.music_queue.pop(0)
 
             if not self.is_skipping:
-                if self.vc is not None and self.vc.is_connected() and not self.vc.is_playing():
+                if not self.vc.is_playing():
                     self.vc.play(discord.FFmpegPCMAudio(m_url, **self.FFMPEG_OPTIONS), after=lambda e: self.play_next() if not self.is_skipping else None)
                     ctx = self.music_queue[0][2]
                     self.client.loop.create_task(self.send_playing_message(m_title, ctx))  # Send a message to the channel
 
             else:
                 self.client.loop.create_task(self.wait_and_play_next())
-
+                
         else:
             self.is_playing = False
             self.client.loop.create_task(self.wait_and_disconnect())
-
+       
     async def send_playing_message(self, title, ctx):
         await ctx.send(f"Lecture en cours de : ```{title}```")
- 
+         
     async def wait_and_disconnect(self):
         await asyncio.sleep(120)
         if not self.is_playing:
             await self.vc.disconnect()
             self.vc = None
-
+            
     async def wait_and_play_next(self):
         await asyncio.sleep(1)
         self.is_skipping = False
@@ -79,14 +79,10 @@ class music_cog(commands.Cog):
             if self.vc is not None and self.vc.is_connected():
                 await self.vc.disconnect()
             self.vc = await self.music_queue[0][1].channel.connect()
-        except discord.errors.ConnectionClosed:
-            print("Connection closed, attempting to reconnect...")
-            await asyncio.sleep(5)
-            return await self.play_music(ctx, pop_first)
         except Exception as e:
             print(f"An error occurred while connecting to the voice channel: {e}")
             return
-
+            
         if len(self.music_queue) > 0:
             self.is_playing = True
             m_url = self.music_queue[0][0]['source']
@@ -121,7 +117,7 @@ class music_cog(commands.Cog):
             await self.play_music(ctx, pop_first=False)
         else:
             await ctx.send("Le numéro de la chanson est invalide.")
-
+            
     @commands.command(name="play", aliases=["p", "playing"], description="Joue de la musique depuis Youtube")
     async def play(self, ctx, *args):
         query = " ".join(args)
@@ -131,7 +127,7 @@ class music_cog(commands.Cog):
         elif self.is_paused:
             self.vs.resume()
         else:
-            songs = await self.search_yt(query, ctx)
+            songs = self.search_yt(query)
             if songs is None:
                 await ctx.send("La musique n'est pas disponible.")
             else:

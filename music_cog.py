@@ -24,7 +24,6 @@ class music_cog(commands.Cog):
                 info = ydl.extract_info(item, download=False)
                 if '_type' in info and info['_type'] == 'playlist':
                     songs = []
-                    total_songs = len(info['entries'])
                     for song in info['entries']:
                         try:
                             songs.append({'source': song['url'], 'title': song['title']})
@@ -106,7 +105,7 @@ class music_cog(commands.Cog):
         else:
             self.is_playing = False
 
-    @commands.command(name="play_song", description="Joue une chanson spécifique de la file d'attente (ex: /play_song 3)")
+    @commands.command(name="play_song", description="Joue une chanson spécifique de la file d'attente (ex: $play_song 3)")
     async def play_song(self, ctx, song_number: int):
         print(f"Playing song number {song_number}")
         if len(self.music_queue) >= song_number > 0:

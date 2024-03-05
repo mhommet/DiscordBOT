@@ -87,12 +87,12 @@ async def help(ctx):
     commands_list = "\n".join([f"- {command.name}: {command.description}" for command in client.commands])
     await ctx.channel.send(f"```Liste des commandes disponibles:\n{commands_list}```")
 
-@client.command(name='ano', description='Envoie un message anonyme')
+@client.command(name='ano', description='Envoie un message anonyme (ex: $ano message)')
 async def echo_delete(ctx, *, message):
     await ctx.message.delete()
     await ctx.send(message)
 
-@client.command(name='insult', description='Insulte un membre du serveur')
+@client.command(name='insult', description='Insulte un membre du serveur (ex: $insult @user)
 async def insult(ctx, *, message):
     # Get the identified user in the message
     if len(ctx.message.mentions) > 0:

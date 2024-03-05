@@ -92,7 +92,7 @@ async def echo_delete(ctx, *, message):
     await ctx.message.delete()
     await ctx.send(message)
 
-@client.command(name='insult', description='Insulte un membre du serveur (ex: $insult @user)
+@client.command(name='insult', description='Insulte un membre du serveur (ex: $insult @user)')
 async def insult(ctx, *, message):
     # Get the identified user in the message
     if len(ctx.message.mentions) > 0:

@@ -2,6 +2,11 @@
 
 ![komradebot](https://github.com/Milan144/KomradeBOT/assets/75842903/8afbfd18-83e7-4522-b528-19e75d980eca)
 
+# Features in the future (EN)
+
+-> Ability to define language in the .env file
+-> Better TTS voice
+
 ## Installation et lancement
 
 Définir les variables d'environnement dans un fichier .env -> comme l'exemple dans le .env.example

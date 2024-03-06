@@ -31,6 +31,7 @@ $clear: Stop la musique et vide la file d'attente
 ```
 **Fun**
 ```
+$chat <question ou message>: Pose une question à KomradeBOT (OpenAI API) and get the answer by TTS in voice channel (Il faut avoir mis un token OpenAI API dans le .env)
 $magic: Fais disparaitre quelqun du channel vocal (1h de cooldown)
 $k2a: Envoie une citation de Kaaris
 $ano <message>: Envoie un message anonyme

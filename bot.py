@@ -102,6 +102,13 @@ async def insult(ctx, *, message):
     else:
         await ctx.send("Tu dois mentionner un membre du serveur")
 
+# Handling unknown commands
+@client.event
+async def on_command_error(ctx, error):
+    if isinstance(error, commands.CommandNotFound):
+        await ctx.send(f'Je ne connais pas cette commande (${ctx.invoked_with}). Utilise $help pour avoir la liste des commandes disponibles.')
+    else:
+        raise error
 # Entry point
 def main() -> None:
     client.run(token=TOKEN)

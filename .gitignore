@@ -1,3 +1,5 @@
 .env
 __pycache__/
 ffmpeg.exe
+response.ogg
+response.mp3

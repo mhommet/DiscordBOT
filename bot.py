@@ -4,6 +4,11 @@ from typing import Final
 import random2 as random
 from discord import Client, Intents
 from discord.ext import commands
+from openai import OpenAI
+from gtts import gTTS
+import discord
+from pydub import AudioSegment
+import asyncio
 
 from dotenv import load_dotenv
 
@@ -12,6 +17,16 @@ from music_cog import music_cog
 # Token
 load_dotenv()
 TOKEN: Final[str] = os.getenv('TOKEN')
+
+# OpenAI setup
+OPENAI_API_KEY: Final[str] = os.getenv('OPENAI_API_KEY')
+
+openai_client = None
+if OPENAI_API_KEY:
+    openai_client = OpenAI(api_key=OPENAI_API_KEY)
+
+# Prompt for the chat command
+prompt = 'Tu est KomradeBOT, un bot discord. Réponds à la question suivante en me tutoyant et avec un ton amical, décontracté mais moqueur. \n\nQ: '
 
 # Bot setup
 intents: Intents = Intents.default()
@@ -102,11 +117,63 @@ async def insult(ctx, *, message):
     else:
         await ctx.send("Tu dois mentionner un membre du serveur")
 
+# OpenAI request
+@client.command(name='chat', description='Pose moi une question')
+async def chat(ctx, *, message):
+    # Check if the user in a voice channel
+    if ctx.author.voice is None or ctx.author.voice.channel is None:
+        await ctx.send("Tu dois être dans un salon vocal pour utiliser cette commande.")
+        return
+    
+    # Check if there is an openai client
+    if openai_client is None:
+        await ctx.send("Pour utiliser cette commande tu dois mettre ton token d'api OpenAI dans le fichier .env sous la clé OPENAI_API_KEY.")
+        return
+    
+    chat_completion = openai_client.chat.completions.create(
+        messages=[{"role": "system", "content": prompt+" "+message}],
+        model="gpt-3.5-turbo",
+    )
+
+    # Convert the response to speech
+    tts = gTTS(text=chat_completion.choices[0].message.content, lang='fr')
+    tts.save("response.mp3")
+    
+    audio = AudioSegment.from_mp3("response.mp3")
+    
+    # Increase the speed of the audio
+    audio = audio.speedup(playback_speed=1.2)
+    audio.export("response.ogg", format="ogg")
+    
+    # Join the voice channel
+    voice_channel = ctx.author.voice.channel
+    voice_client = discord.utils.get(client.voice_clients, guild=ctx.guild)
+    
+    if voice_client and voice_client.is_connected():
+        await voice_client.move_to(voice_channel)
+    else:
+        voice_client = await voice_channel.connect()
+    
+    # Play the response
+    voice_client.play(discord.FFmpegPCMAudio(executable="ffmpeg", source="response.ogg"), after=lambda e: delete_audio_files())
+    
+    await leave_channel_if_afk(voice_client)
+
+def delete_audio_files():
+    # Deleting the temporary audio files
+    os.remove("response.mp3")
+    os.remove("response.ogg")
+    
+async def leave_channel_if_afk(voice_client):
+    await asyncio.sleep(120)  # Wait for 2 minutes before leaving the channel
+    if not voice_client.is_playing():
+        await voice_client.disconnect()
+
 # Handling unknown commands
 @client.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
-        await ctx.send(f'Je ne connais pas cette commande (${ctx.invoked_with}). Utilise $help pour avoir la liste des commandes disponibles.')
+        await ctx.send("Je ne connais pas cette commande. Utilise $help pour voir la liste des commandes disponibles.")
     else:
         raise error
 # Entry point

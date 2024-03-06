@@ -4,8 +4,8 @@
 
 # Features in the future (EN)
 
--> Ability to define language in the .env file
--> Better TTS voice
+- Ability to define language in the .env file
+- Better TTS voice
 
 ## Installation et lancement
 

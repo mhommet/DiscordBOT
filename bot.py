@@ -130,6 +130,9 @@ async def chat(ctx, *, message):
         await ctx.send("Pour utiliser cette commande tu dois mettre ton token d'api OpenAI dans le fichier .env sous la clé OPENAI_API_KEY.")
         return
     
+    # Send a message to say that the bot is thinking
+    await ctx.send("Je réfléchis...")
+
     chat_completion = openai_client.chat.completions.create(
         messages=[{"role": "system", "content": prompt+" "+message}],
         model="gpt-3.5-turbo",

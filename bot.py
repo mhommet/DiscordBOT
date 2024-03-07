@@ -26,7 +26,7 @@ if OPENAI_API_KEY:
     openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
 # Prompt for the chat command
-prompt = "Tu est KomradeBOT, un bot discord. Réponds à la question suivante en me tutoyant et avec un ton amical, décontracté mais moqueur. \n\nQ: "
+prompt = "Tu est Komrade, un ornithorynque. Réponds à la question suivante en me tutoyant et avec un ton amical, décontracté mais moqueur. \n\nQ: "
 
 # Bot setup
 intents: Intents = Intents.default()

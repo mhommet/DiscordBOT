@@ -100,6 +100,7 @@ async def magic(ctx):
             await ctx.channel.send(f"Et pouf ! {member_to_kick.name} a disparu !")
             magic_last_used = time.time()
     else:
+        # If the user is not in channel we send a message
         await ctx.channel.send("Tu dois être dans un salon vocal pour utiliser /magic")
 
 

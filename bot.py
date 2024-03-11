@@ -7,6 +7,7 @@ from discord.ext import commands
 from openai import OpenAI
 from gtts import gTTS
 import discord
+
 from pydub import AudioSegment
 import asyncio
 

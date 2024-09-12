@@ -2,3 +2,8 @@
 __pycache__/
 response.ogg
 response.mp3
+ffmpeg.exe
+ffplay.exe
+ffprobe.exe
+start_bot.bat
+start_bot.vbs

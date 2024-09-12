@@ -42,9 +42,6 @@ COOLDOWN_TIME: Final[int] = 5
 magic_last_used = 0
 MAGIC_COOLDOWN_TIME: Final[int] = 3600
 
-# Quotes
-with open("citations.txt", "r", encoding="utf-8") as f:
-    quotes = [line.strip() for line in f]
 
 # Insultes
 with open("insultes.txt", "r", encoding="utf-8") as f:

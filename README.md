@@ -1,7 +1,5 @@
 # KomradeBOT
 
-![komradebot](https://github.com/Milan144/KomradeBOT/assets/75842903/8afbfd18-83e7-4522-b528-19e75d980eca)
-
 - [FR](https://github.com/Milan144/KomradeBOT?tab=readme-ov-file#french)
 
 - [EN](https://github.com/Milan144/KomradeBOT?tab=readme-ov-file#english)

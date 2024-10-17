@@ -39,17 +39,8 @@ COOLDOWN_TIME: Final[int] = 5
 magic_last_used = 0
 MAGIC_COOLDOWN_TIME: Final[int] = 3600
 
-# Quotes
-with open("citations.txt", "r", encoding="utf-8") as f:
-    quotes = [line.strip() for line in f]
-
-# Insultes
-with open("insultes.txt", "r", encoding="utf-8") as f:
-    insults = [line.strip() for line in f]
-
 # Remove the built-in help command
 client.remove_command("help")
-
 
 # Starting bot
 @client.event
@@ -100,12 +91,6 @@ async def magic(ctx):
         # If the user is not in channel we send a message
         await ctx.channel.send("Tu dois être dans un salon vocal pour utiliser /magic")
 
-
-@client.command(name="k2a", description="Envoie une citation de Kaaris")
-async def quote(ctx):
-    await ctx.send(random.choice(quotes))
-
-
 # Help command
 @client.command(name="help", description="Affiche la liste des commandes")
 async def help(ctx):
@@ -119,20 +104,6 @@ async def help(ctx):
 async def echo_delete(ctx, *, message):
     await ctx.message.delete()
     await ctx.send(message)
-
-
-@client.command(
-    name="insult", description="Insulte un membre du serveur (ex: $insult @user)"
-)
-async def insult(ctx, *, message):
-    # Get the identified user in the message
-    if len(ctx.message.mentions) > 0:
-        # Delete the message that triggered the command
-        await ctx.message.delete()
-        await ctx.send(random.choice(insults) + " " + ctx.message.mentions[0].mention)
-    else:
-        await ctx.send("Tu dois mentionner un membre du serveur")
-
 
 # OpenAI request
 @client.command(name="chat", description="Pose moi une question")

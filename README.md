@@ -4,12 +4,6 @@
 
 # French
 
-## Prochaines features
-
-- Pouvoir changer la langue du bot dans le .env
-- Meilleure voix TTS
-- Changement de model pour la commande chat
-
 ## Installation et lancement
 
 Définir les variables d'environnement dans un fichier .env -> comme l'exemple dans le .env.example
@@ -41,10 +35,8 @@ $clear: Stop la musique et vide la file d'attente
 ```
 $chat <question ou message>: Pose une question à KomradeBOT (OpenAI API) and get the answer by TTS in voice channel (Il faut avoir mis un token OpenAI API dans le .env)
 $magic: Fais disparaitre quelqun du channel vocal (1h de cooldown)
-$k2a: Envoie une citation de Kaaris
 $ano <message>: Envoie un message anonyme
 $roulette: Roulette russe (5s de cooldown)
-$insult <user>: Insulte un membre du serveur
 ```
 **Utilitaires**
 ```
@@ -53,17 +45,9 @@ $help: Affiche la liste des commandes
 
 ## Informations supplémentaires
 
-* Le bot est actuellement en français, mais une version anglaise est prévue.
 * Le bot utilise l'API OpenAI pour la commande `$chat`, vous devez donc disposer d'un jeton d'API pour l'utiliser.
-* Le bot est toujours en développement, il peut donc y avoir des bugs ou des fonctionnalités manquantes.
-* Si vous avez des questions ou des suggestions, n'hésitez pas à ouvrir un ticket sur GitHub.
 
 # English
-
-## Planned Features
-
-- Ability to define language in the .env file
-- Better TTS voice
 
 ## Installation and Launching
 
@@ -96,10 +80,8 @@ $clear: Stops the music and clears the queue
 ```
 $chat <question or message>: Asks KomradeBOT a question (OpenAI API) and get the answer by TTS in voice channel (You need to have set an OpenAI API token in the .env)
 $magic: Makes someone disappear from the voice channel (1h cooldown)
-$k2a: Sends a Kaaris quote (French rapper)
 $ano <message>: Sends an anonymous message
 $roulette: Russian roulette (5s cooldown)
-$insult <user>: Insults a server member
 ```
 **Utilities**
 ```
@@ -108,7 +90,4 @@ $help: Displays the list of commands
 
 ## Additional Information
 
-* The bot is currently in French, but an English version is planned.
 * The bot uses the OpenAI API for the $chat command, so you need to have an API token to use it.
-* The bot is still under development, so there may be bugs or missing features.
-* If you have any questions or suggestions, feel free to open an issue on GitHub.

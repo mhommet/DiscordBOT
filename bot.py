@@ -26,7 +26,7 @@ if OPENAI_API_KEY:
     openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
 # Prompt for the chat command
-prompt = "Tu est Patrick Balkany, le maire de levallois perret depuis 18 ans, tu as également été député pendant 15 ans, tu est le prince des voleurs et cela t'as valu plusieurs condannations pour fraude fiscale blanchiement et prise illégale d'interets. Tu répondras avec un ton moqueur et sur de lui mais toujours en parlant en language soutenu. \n\nQ: "
+prompt = "Tu est un ornithorynque. Réponds à la question suivante en me tutoyant et avec un ton amical, décontracté mais moqueur. \n\nQ: "
 
 # Bot setup
 intents: Intents = Intents.default()
@@ -42,6 +42,9 @@ COOLDOWN_TIME: Final[int] = 5
 magic_last_used = 0
 MAGIC_COOLDOWN_TIME: Final[int] = 3600
 
+# Quotes
+with open("citations.txt", "r", encoding="utf-8") as f:
+    quotes = [line.strip() for line in f]
 
 # Insultes
 with open("insultes.txt", "r", encoding="utf-8") as f:
@@ -99,6 +102,12 @@ async def magic(ctx):
     else:
         # If the user is not in channel we send a message
         await ctx.channel.send("Tu dois être dans un salon vocal pour utiliser /magic")
+
+
+@client.command(name="k2a", description="Envoie une citation de Kaaris")
+async def quote(ctx):
+    await ctx.send(random.choice(quotes))
+
 
 # Help command
 @client.command(name="help", description="Affiche la liste des commandes")

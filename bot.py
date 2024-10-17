@@ -25,9 +25,6 @@ openai_client = None
 if OPENAI_API_KEY:
     openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
-# Prompt for the chat command
-prompt = "Tu est un ornithorynque. Réponds à la question suivante en me tutoyant et avec un ton amical, décontracté mais moqueur. \n\nQ: "
-
 # Bot setup
 intents: Intents = Intents.default()
 intents.message_content = True
@@ -156,7 +153,7 @@ async def chat(ctx, *, message):
     await ctx.send("Je réfléchis...")
 
     chat_completion = openai_client.chat.completions.create(
-        messages=[{"role": "system", "content": prompt + " " + message}],
+        messages=[{"role": "system", "content": message}],
         model="gpt-3.5-turbo",
     )
 

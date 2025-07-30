@@ -1,20 +1,20 @@
-# Use an official Python runtime as a parent image
-FROM python:3.9-slim-buster
+# Use a recent official Python image
+FROM python:3.9-slim-bookworm
 
-# Set the working directory in the container to /app
+# Set working directory
 WORKDIR /app
 
-# Add ffmpeg and PyNaCl dependencies
-RUN apt-get update && apt-get install -y ffmpeg libffi-dev libnacl-dev
+# Install ffmpeg + PyNaCl build deps
+RUN apt-get update && \
+    apt-get install -y ffmpeg libffi-dev libnacl-dev && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-# Copy the current directory contents into the container at /app
+# Copy the code
 COPY . /app
 
-# Install any needed packages specified in requirements.txt
+# Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Make port 80 available to the world outside this container
-EXPOSE 80
-
-# Run bot.py when the container launches
+# Command to run the bot
 CMD ["python", "bot.py"]

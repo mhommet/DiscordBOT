@@ -1,3 +1,10 @@
+# DiscordBOT
+
+## TODO
+
+- [ ] Github Actions
+- [ ] Nouvelles commandes
+
 ## Installation
 
 ```

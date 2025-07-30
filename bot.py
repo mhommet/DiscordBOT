@@ -1,186 +1,371 @@
 import os
 import time
-from typing import Final
+from typing import Final, List, Dict, Any, Optional, Union
 import random2 as random
-from discord import Client, Intents
+import random
+from discord import Client, Intents, FFmpegPCMAudio, VoiceClient
 from discord.ext import commands
-from openai import OpenAI
-from gtts import gTTS
 import discord
-from pydub import AudioSegment
 import asyncio
+from yt_dlp import YoutubeDL
 
 from dotenv import load_dotenv
 
-from music_cog import music_cog
+# Chargement des variables d'environnement
+_ = load_dotenv()
+# Token du bot Discord
+TOKEN: Final[str] = os.getenv("TOKEN") or ""
 
-# Token
-load_dotenv()
-TOKEN: Final[str] = os.getenv("TOKEN")
-
-# OpenAI setup
-OPENAI_API_KEY: Final[str] = os.getenv("OPENAI_API_KEY")
-
-openai_client = None
-if OPENAI_API_KEY:
-    openai_client = OpenAI(api_key=OPENAI_API_KEY)
-
-# Bot setup
+# Configuration du bot avec les intents requis
 intents: Intents = Intents.default()
-intents.message_content = True
-intents.members = True
+intents.message_content = True  # Permet au bot de lire le contenu des messages
+intents.members = True  # Permet au bot de suivre les membres du serveur
 client: Client = commands.Bot(command_prefix="$", intents=intents)
 
-# Cooldowns
-# Roulette
-roulette_cooldown = {}
-COOLDOWN_TIME: Final[int] = 5
-# Magic
-magic_last_used = 0
-MAGIC_COOLDOWN_TIME: Final[int] = 3600
+# Pas besoin de suivi de cooldown pour les commandes musicales
 
-# Remove the built-in help command
-client.remove_command("help")
+# Supprime la commande d'aide intégrée pour utiliser notre commande personnalisée
+_ = client.remove_command("help")
 
-# Starting bot
+
+# Variables pour les fonctionnalités musicales
+is_playing = False
+is_paused = False
+is_skipping = False
+music_queue = []
+YDL_OPTIONS = {"format": "bestaudio", "noplaylist": "False"}
+FFMPEG_OPTIONS = {
+    "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
+    "options": "-vn",
+}
+vc = None
+
+
+# Événement d'initialisation du bot
 @client.event
 async def on_ready() -> None:
-    await client.add_cog(music_cog(client))
-    print(f"{client.user} connected")
+    print(f"{client.user} connecté")
 
 
-# Define commands with names and descriptions
-@client.command(name="roulette", description="Roulette russe (5s de cooldown)")
-async def roulette(ctx):
-    if (
-        ctx.author.name in roulette_cooldown
-        and time.time() - roulette_cooldown[ctx.author.name] < COOLDOWN_TIME
-    ):
-        await ctx.channel.send(
-            f"Cooldown ! Tu dois attendre {COOLDOWN_TIME - int(time.time() - roulette_cooldown[ctx.author.name])} secondes..."
-        )
-        return
-
-    if random.randint(0, 5) == 0:
-        await ctx.channel.send("HES DED")
-        if ctx.author.voice and ctx.author.voice.channel:
-            await ctx.author.move_to(None)
-    else:
-        await ctx.channel.send("OK").then()
-        roulette_cooldown[ctx.author.name] = time.time()
+# Commandes musicales définies ci-dessous
 
 
-@client.command(name="magic", description="Tour de magie... (1h de cooldown)")
-async def magic(ctx):
-    global magic_last_used
-    if time.time() - magic_last_used < MAGIC_COOLDOWN_TIME:
-        await ctx.channel.send(
-            f"Cooldown ! Tu dois attendre {MAGIC_COOLDOWN_TIME - int(time.time() - magic_last_used)} secondes..."
-        )
-        return
-
-    # Kick a random member from the voice channel
-    if ctx.author.voice and ctx.author.voice.channel:
-        members = ctx.author.voice.channel.members
-        if members:
-            member_to_kick = random.choice(members)
-            await member_to_kick.move_to(None)
-            await ctx.channel.send(f"Et pouf ! {member_to_kick.name} a disparu !")
-            magic_last_used = time.time()
-    else:
-        # If the user is not in channel we send a message
-        await ctx.channel.send("Tu dois être dans un salon vocal pour utiliser /magic")
-
-# Help command
+# Commande d'aide - affiche toutes les commandes disponibles
 @client.command(name="help", description="Affiche la liste des commandes")
-async def help(ctx):
-    commands_list = "\n".join(
-        [f"- {command.name}: {command.description}" for command in client.commands]
-    )
-    await ctx.channel.send(f"```Liste des commandes disponibles:\n{commands_list}```")
+async def help_command(ctx: commands.Context) -> None:
+    """Affiche la liste des commandes disponibles avec leurs descriptions"""
+
+    # Dictionnaire pour organiser les commandes par catégorie
+    categories = {"Musique": [], "Utilitaires": []}
+
+    # Dictionnaire pour traduire les descriptions en français
+    translations = {
+        "Play music from YouTube": "Joue de la musique depuis YouTube",
+        "Play a specific song from the queue (ex: $play_song 3)": "Joue une chanson spécifique de la file d'attente (ex: $play_song 3)",
+        "Pause the music": "Met en pause la musique",
+        "Resume the music": "Reprend la lecture de la musique",
+        "Skip to the next song": "Passe à la chanson suivante",
+        "Show the music queue": "Affiche la file d'attente",
+        "Stop the music and clear the queue": "Arrête la musique et vide la file d'attente",
+        "Leave the voice channel": "Quitte le canal vocal",
+        "Displays the list of commands": "Affiche la liste des commandes",
+    }
+
+    # Trier les commandes par catégorie
+    for command in client.commands:
+        translated_desc = translations.get(command.description, command.description)
+
+        if command.name in ["help"]:
+            categories["Utilitaires"].append((command.name, translated_desc))
+        else:
+            categories["Musique"].append((command.name, translated_desc))
+
+        # Formater le message d'aide
+    help_message = "**📋 LISTE DES COMMANDES DISPONIBLES**\n\n"
+
+    for category, cmds in categories.items():
+        if cmds:
+            help_message += f"**__{category}__**\n"
+            for name, desc in cmds:
+                # Ajouter les alias si disponibles
+                aliases = ""
+                cmd = client.get_command(name)
+                if cmd and cmd.aliases:
+                    aliases = f" (alias: {', '.join(cmd.aliases)})"
+
+                help_message += f"• **${name}**{aliases}\n  {desc}\n"
+
+            help_message += "\n"
+
+    await ctx.channel.send(help_message)
 
 
-@client.command(name="ano", description="Envoie un message anonyme (ex: $ano message)")
-async def echo_delete(ctx, *, message):
-    await ctx.message.delete()
-    await ctx.send(message)
+# Fonctionnalités musicales
+def search_yt(item):
+    """Rechercher une chanson ou une playlist sur YouTube"""
+    with YoutubeDL(YDL_OPTIONS) as ydl:
+        try:
+            info = ydl.extract_info(item, download=False)
+            if "_type" in info and info["_type"] == "playlist":
+                songs = []
+                for song in info["entries"]:
+                    try:
+                        songs.append({"source": song["url"], "title": song["title"]})
+                    except Exception:
+                        continue
+                # Shuffle the songs
+                random.shuffle(songs)
+                return songs
+            else:
+                return {"source": info["url"], "title": info["title"]}
+        except Exception:
+            return None
 
-# OpenAI request
-@client.command(name="chat", description="Pose moi une question")
-async def chat(ctx, *, message):
-    # Check if the user in a voice channel
-    if ctx.author.voice is None or ctx.author.voice.channel is None:
-        await ctx.send("Tu dois être dans un salon vocal pour utiliser cette commande.")
-        return
 
-    # Check if there is an openai client
-    if openai_client is None:
-        await ctx.send(
-            "Pour utiliser cette commande tu dois mettre ton token d'api OpenAI dans le fichier .env sous la clé OPENAI_API_KEY."
-        )
-        return
+def play_next():
+    """Jouer la chanson suivante dans la file d'attente"""
+    global is_playing, is_skipping, music_queue, vc
 
-    # Send a message to say that the bot is thinking
-    await ctx.send("Je réfléchis...")
+    if len(music_queue) > 0 and vc and vc.is_connected():
+        is_playing = True
 
-    chat_completion = openai_client.chat.completions.create(
-        messages=[{"role": "system", "content": message}],
-        model="gpt-3.5-turbo",
-    )
+        m_url = music_queue[0][0]["source"]
+        m_title = music_queue[0][0]["title"]
 
-    # Convert the response to speech
-    tts = gTTS(text=chat_completion.choices[0].message.content, lang="fr")
-    tts.save("response.mp3")
+        music_queue.pop(0)
 
-    audio = AudioSegment.from_mp3("response.mp3")
+        if not is_skipping:
+            if not vc.is_playing():
+                vc.play(
+                    discord.FFmpegPCMAudio(m_url, **FFMPEG_OPTIONS),
+                    after=lambda e: play_next() if not is_skipping else None,
+                )
+                ctx = music_queue[0][2]
+                client.loop.create_task(
+                    send_playing_message(m_title, ctx)
+                )  # Send a message to the channel
+        else:
+            client.loop.create_task(wait_and_play_next())
 
-    # Increase the speed of the audio
-    audio = audio.speedup(playback_speed=1.2)
-    audio.export("response.ogg", format="ogg")
-
-    # Join the voice channel
-    voice_channel = ctx.author.voice.channel
-    voice_client = discord.utils.get(client.voice_clients, guild=ctx.guild)
-
-    if voice_client and voice_client.is_connected():
-        await voice_client.move_to(voice_channel)
     else:
-        voice_client = await voice_channel.connect()
-
-    # Play the response
-    voice_client.play(
-        discord.FFmpegPCMAudio(executable="ffmpeg", source="response.ogg"),
-        after=lambda e: delete_audio_files(),
-    )
-
-    await leave_channel_if_afk(voice_client)
+        is_playing = False
+        client.loop.create_task(wait_and_disconnect())
 
 
-def delete_audio_files():
-    # Deleting the temporary audio files
-    os.remove("response.mp3")
-    os.remove("response.ogg")
+async def send_playing_message(title, ctx):
+    """Envoie un message indiquant la chanson en cours de lecture"""
+    await ctx.send(f"🎵 **En cours de lecture:** {title}")
 
 
-async def leave_channel_if_afk(voice_client):
-    await asyncio.sleep(120)  # Wait for 2 minutes before leaving the channel
-    if not voice_client.is_playing():
-        await voice_client.disconnect()
+async def wait_and_disconnect():
+    """Attendre 2 minutes d'inactivité avant de se déconnecter"""
+    global vc, is_playing
+    await asyncio.sleep(120)
+    if not is_playing:
+        await vc.disconnect()
+        vc = None
 
 
-# Handling unknown commands
+async def wait_and_play_next():
+    """Attendre brièvement puis jouer la chanson suivante"""
+    global is_skipping
+    await asyncio.sleep(1)
+    is_skipping = False
+    play_next()
+
+
+async def play_music(ctx, pop_first=True):
+    """Commencer à jouer de la musique à partir de la file d'attente"""
+    global is_playing, music_queue, vc
+
+    try:
+        if vc is not None and vc.is_connected():
+            await vc.disconnect()
+        vc = await music_queue[0][1].channel.connect()
+    except Exception as e:
+        print(f"An error occurred while connecting to the voice channel: {e}")
+        return
+
+    if len(music_queue) > 0:
+        is_playing = True
+        m_url = music_queue[0][0]["source"]
+        m_title = music_queue[0][0]["title"]
+
+        if vc == None or not vc.is_connected():
+            vc = await music_queue[0][1].channel.connect()
+
+            if vc == None:
+                await ctx.send("❌ **Je n'ai pas pu me connecter au canal vocal.**")
+                return
+        else:
+            await vc.move_to(music_queue[0][1].channel)
+
+        if pop_first:
+            music_queue.pop(0)
+
+        vc.play(
+            discord.FFmpegPCMAudio(m_url, **FFMPEG_OPTIONS), after=lambda e: play_next()
+        )
+        await send_playing_message(m_title, ctx)
+    else:
+        is_playing = False
+
+
+# Commandes musicales
+@client.command(
+    name="play_song",
+    description="Joue une chanson spécifique de la file d'attente (ex: $play_song 3)",
+)
+async def play_song(ctx: commands.Context, song_number: int) -> None:
+    """Joue une chanson spécifique de la file d'attente par son numéro"""
+    global music_queue, vc
+
+    print(f"Playing song number {song_number}")
+    if len(music_queue) >= song_number > 0:
+        song = music_queue.pop(song_number - 1)
+        music_queue.insert(0, song)
+        if vc != None and vc.is_playing():
+            vc.stop()
+        await play_music(ctx, pop_first=False)
+    else:
+        await ctx.send("❌ **Numéro de chanson invalide.**")
+
+
+@client.command(
+    name="play",
+    aliases=["p", "playing"],
+    description="Joue de la musique depuis YouTube",
+)
+async def play(ctx: commands.Context, *args) -> None:
+    """Joue de la musique depuis une URL YouTube ou une recherche"""
+    global is_paused, is_playing, music_queue
+
+    query = " ".join(args)
+
+    if ctx.author.voice is None:
+        await ctx.send(
+            "🔊 **Vous devez être dans un canal vocal pour jouer de la musique.**"
+        )
+    elif is_paused:
+        vc.resume()
+    else:
+        songs = search_yt(query)
+        if songs is None:
+            await ctx.send("❌ **La musique n'est pas disponible.**")
+        else:
+            if isinstance(songs, list):
+                for song in songs:
+                    if isinstance(song, dict):
+                        music_queue.append([song, ctx.author.voice, ctx])
+                await ctx.send("✅ **Chansons ajoutées à la file d'attente**")
+            elif isinstance(songs, dict):
+                music_queue.append([songs, ctx.author.voice, ctx])
+                await ctx.send("✅ **Chanson ajoutée à la file d'attente**")
+            if is_playing == False:
+                await play_music(ctx)
+
+
+@client.command(name="pause", description="Met en pause la musique")
+async def pause(ctx: commands.Context, *args) -> None:
+    """Met en pause ou reprend la lecture de la musique en cours"""
+    global is_playing, is_paused, vc
+
+    if vc and vc.is_playing():
+        is_playing = False
+        is_paused = True
+        vc.pause()
+    elif is_paused:
+        is_playing = True
+        is_paused = False
+        vc.resume()
+
+
+@client.command(
+    name="resume", aliases=["r"], description="Reprend la lecture de la musique"
+)
+async def resume(ctx: commands.Context, *args) -> None:
+    """Reprend la lecture de la musique en pause"""
+    global is_playing, is_paused, vc
+
+    if is_paused:
+        is_playing = True
+        is_paused = False
+        vc.resume()
+
+
+@client.command(name="skip", aliases=["s"], description="Passe à la chanson suivante")
+async def skip(ctx: commands.Context, *args) -> None:
+    """Passe la chanson en cours de lecture"""
+    global is_skipping, vc
+
+    if vc != None and vc.is_playing():
+        is_skipping = True
+        vc.stop()
+        client.loop.create_task(wait_and_play_next())
+    else:
+        await ctx.send("❌ **Je ne suis pas en train de jouer de la musique.**")
+
+
+@client.command(name="queue", aliases=["q"], description="Affiche la file d'attente")
+async def queue(ctx: commands.Context) -> None:
+    """Affiche la file d'attente actuelle"""
+    global music_queue
+
+    if len(music_queue) > 0:
+        for i in range(0, len(music_queue), 10):
+            retval = "**🎶 FILE D'ATTENTE**\n\n"
+            for j in range(i, min(i + 10, len(music_queue))):
+                retval += f"**{j + 1}.** {music_queue[j][0]['title']}\n"
+            await ctx.send(retval)
+    else:
+        await ctx.send("📭 **La file d'attente est vide.**")
+
+
+@client.command(
+    name="clear",
+    aliases=["c", "bin"],
+    description="Arrête la musique et vide la file d'attente",
+)
+async def clear(ctx: commands.Context, *args) -> None:
+    """Arrête la musique et vide la file d'attente"""
+    global is_playing, music_queue, vc
+
+    if vc != None and is_playing:
+        vc.stop()
+    music_queue = []
+    await ctx.send("🗑️ **La file d'attente a été vidée.**")
+
+
+@client.command(
+    name="leave",
+    aliases=["l", "disconnect", "d"],
+    description="Quitte le canal vocal",
+)
+async def leave(ctx: commands.Context) -> None:
+    """Déconnecte le bot du canal vocal"""
+    global is_playing, is_paused, vc
+
+    is_playing = False
+    is_paused = False
+    if vc and vc.is_connected():
+        await vc.disconnect()
+
+
+# Gestion des commandes inconnues
 @client.event
-async def on_command_error(ctx, error):
+async def on_command_error(ctx: commands.Context, error: Exception) -> None:
+    """Gère les erreurs de commande, notamment les commandes inconnues"""
     if isinstance(error, commands.CommandNotFound):
         await ctx.send(
-            "Je ne connais pas cette commande. Utilise $help pour voir la liste des commandes disponibles."
+            "❓ **Commande inconnue.** Utilisez `$help` pour voir la liste des commandes disponibles."
         )
     else:
         raise error
 
 
-# Entry point
+# Point d'entrée de l'application
 def main() -> None:
+    """Démarre le bot Discord avec le token configuré"""
     client.run(token=TOKEN)
 
 

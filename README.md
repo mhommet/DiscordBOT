@@ -3,6 +3,7 @@
 ## TODO
 
 - [ ] Github Actions
+- [ ] Intégrer les commandes dans le menu discord
 - [ ] Nouvelles commandes
 
 ## Installation

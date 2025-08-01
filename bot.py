@@ -304,6 +304,22 @@ async def queue(interaction: discord.Interaction):
     await interaction.response.send_message(queue_list)
 
 
+@bot.tree.command(name="leave", description="Déconnecte le bot du canal vocal")
+async def leave(interaction: discord.Interaction):
+    voice_client = interaction.guild.voice_client
+
+    if not voice_client or not voice_client.is_connected():
+        await interaction.response.send_message("❌ **Je ne suis pas connecté à un canal vocal.**")
+        return
+
+    guild_id_str = str(interaction.guild_id)
+    if guild_id_str in SONG_QUEUES:
+        SONG_QUEUES[guild_id_str].clear()
+
+    await voice_client.disconnect()
+    await interaction.response.send_message("👋 **Déconnexion du canal vocal !**")
+
+
 
 
 

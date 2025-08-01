@@ -1,7 +1,13 @@
 services:
     komradebot:
-        build: .
+        build:
+            context: .
+            tags:
+                - komradebot:2.0
         restart: always
         network_mode: 'host'
         volumes:
             - ./.env:/app/.env:ro
+            - ./data:/app/data
+        environment:
+            - PYTHONUNBUFFERED=1

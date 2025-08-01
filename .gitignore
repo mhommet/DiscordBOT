@@ -1,8 +1,38 @@
+# Environnement
 .env
+
+# Base de données et cache
+data/
+*.db
+*.json
+
+# Python
 __pycache__/
-start_bot.bat
-start_bot.vbs
-.idea/*
-.venv/*
-.vscode/*
-venv/*
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual env
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.dockerignore
+
+# Logs
+*.log

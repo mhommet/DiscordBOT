@@ -6,3 +6,4 @@ PyNaCl
 openai
 gtts
 pydub
+aiohttp

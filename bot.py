@@ -14,6 +14,14 @@ from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv("TOKEN")
 
+# Vérification du token
+if not TOKEN:
+    print("❌ ERREUR: Token Discord manquant!")
+    print("Créez un fichier .env avec:")
+    print("TOKEN=votre_token_discord_ici")
+    print("\nOu définissez la variable d'environnement TOKEN")
+    exit(1)
+
 # Configuration du bot avec les intents requis
 intents = discord.Intents.default()
 intents.message_content = True

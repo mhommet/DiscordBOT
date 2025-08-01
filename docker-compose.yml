@@ -1,7 +1,7 @@
 services:
-  komradebot:
-    build: .
-    restart: always
-    network_mode: "host"
-    volumes:
-      - ./.env:/app/.env:ro
+    komradebot:
+        build: .
+        restart: always
+        network_mode: 'host'
+        volumes:
+            - ./.env:/app/.env:ro

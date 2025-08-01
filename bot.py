@@ -122,7 +122,7 @@ async def play_next_song(voice_client, guild_id, channel):
         if SONG_QUEUES[guild_id]:
             audio_url, title = SONG_QUEUES[guild_id].popleft()
 
-            source = discord.FFmpegOpusAudio(audio_url, **FFMPEG_OPTIONS)
+            source = discord.FFmpegPCMAudio(audio_url, **FFMPEG_OPTIONS)
 
             def after_play(error):
                 if error:

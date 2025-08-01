@@ -161,19 +161,10 @@ async def play(interaction: discord.Interaction, recherche: str):
 
     if voice_client is None:
         try:
-            # Essayer de se connecter directement - timeout court pour échouer vite sur les mauvais serveurs
-            voice_client = await voice_channel.connect(timeout=8.0, reconnect=True)
-            # Petit délai pour s'assurer que la connexion est stable
-            await asyncio.sleep(0.2)
+            voice_client = await voice_channel.connect(timeout=20.0, reconnect=True)
         except Exception as e:
-            # Retry une fois avec un délai différent
-            try:
-                await asyncio.sleep(1)
-                voice_client = await voice_channel.connect(timeout=8.0, reconnect=True)
-                await asyncio.sleep(0.2)
-            except Exception as retry_error:
-                await interaction.followup.send(f"❌ **Impossible de se connecter au canal vocal:** {str(retry_error)}")
-                return
+            await interaction.followup.send(f"❌ **Impossible de se connecter au canal vocal:** {str(e)}")
+            return
     elif voice_channel != voice_client.channel:
         try:
             await voice_client.move_to(voice_channel)
@@ -297,36 +288,7 @@ async def queue(interaction: discord.Interaction):
     await interaction.response.send_message(queue_list)
 
 
-@bot.tree.command(name="fixvoice", description="Optimise la connexion vocale (admin seulement)")
-async def fix_voice(interaction: discord.Interaction):
-    # Vérifier les permissions d'admin
-    if not interaction.user.guild_permissions.administrator:
-        await interaction.response.send_message("❌ **Seuls les administrateurs peuvent utiliser cette commande.**")
-        return
-        
-    try:
-        # Changer la région voice vers une plus stable
-        await interaction.guild.edit(region=discord.VoiceRegion.europe)
-        await interaction.response.send_message("✅ **Région voice optimisée vers Europe pour une meilleure stabilité.**")
-    except Exception as e:
-        await interaction.response.send_message(f"⚠️ **Région voice non modifiable:** {str(e)}")
 
-
-@bot.tree.command(name="voiceinfo", description="Affiche les infos de connexion vocale")
-async def voice_info(interaction: discord.Interaction):
-    voice_client = interaction.guild.voice_client
-    
-    if not voice_client:
-        await interaction.response.send_message("❌ **Bot non connecté à un canal vocal.**")
-        return
-        
-    info = f"**🔊 Informations vocales**\n"
-    info += f"**Connecté:** {'✅ Oui' if voice_client.is_connected() else '❌ Non'}\n"
-    info += f"**Canal:** {voice_client.channel.name if voice_client.channel else 'Aucun'}\n"
-    info += f"**Latence:** {round(voice_client.latency * 1000)}ms\n"
-    info += f"**Région serveur:** {interaction.guild.region}\n"
-    
-    await interaction.response.send_message(info)
 
 
 # Point d'entrée de l'application

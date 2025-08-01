@@ -49,7 +49,7 @@ YDL_OPTIONS = {
 
 FFMPEG_OPTIONS = {
     "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
-    "options": "-vn -loglevel panic",
+    "options": "-vn",
 }
 
 # Fonction asynchrone pour éviter le blocage avec yt-dlp
@@ -122,18 +122,12 @@ async def play_next_song(voice_client, guild_id, channel):
         if SONG_QUEUES[guild_id]:
             audio_url, title = SONG_QUEUES[guild_id].popleft()
 
-            # Arrêter tout stream existant avant de jouer
-            if voice_client.is_playing():
-                voice_client.stop()
-                await asyncio.sleep(0.5)
-
             source = discord.FFmpegOpusAudio(audio_url, **FFMPEG_OPTIONS)
 
             def after_play(error):
                 if error:
                     print(f"Erreur lors de la lecture de {title}: {error}")
-                # Nettoyer et relancer la prochaine chanson
-                if voice_client.is_connected() and not voice_client.is_playing():
+                if voice_client.is_connected():
                     asyncio.run_coroutine_threadsafe(play_next_song(voice_client, guild_id, channel), bot.loop)
 
             voice_client.play(source, after=after_play)
@@ -167,7 +161,7 @@ async def play(interaction: discord.Interaction, recherche: str):
 
     if voice_client is None:
         try:
-            voice_client = await voice_channel.connect(timeout=15.0, reconnect=False)
+            voice_client = await voice_channel.connect(timeout=20.0, reconnect=True)
         except Exception as e:
             await interaction.followup.send(f"❌ **Impossible de se connecter au canal vocal:** {str(e)}")
             return
@@ -175,14 +169,8 @@ async def play(interaction: discord.Interaction, recherche: str):
         try:
             await voice_client.move_to(voice_channel)
         except Exception as e:
-            # En cas d'erreur de déplacement, reconnecter
-            try:
-                await voice_client.disconnect()
-                await asyncio.sleep(1)
-                voice_client = await voice_channel.connect(timeout=15.0, reconnect=False)
-            except Exception as e2:
-                await interaction.followup.send(f"❌ **Impossible de changer de canal vocal:** {str(e2)}")
-                return
+            await interaction.followup.send(f"❌ **Impossible de changer de canal vocal:** {str(e)}")
+            return
 
     # Recherche avec pytube
     try:
@@ -278,41 +266,8 @@ async def leave(interaction: discord.Interaction):
     if guild_id_str in SONG_QUEUES:
         SONG_QUEUES[guild_id_str].clear()
 
-    # Arrêter proprement avant de déconnecter
-    if voice_client.is_playing():
-        voice_client.stop()
-        await asyncio.sleep(0.5)
-        
     await voice_client.disconnect()
     await interaction.response.send_message("👋 **Déconnexion du canal vocal !**")
-
-
-@bot.tree.command(name="reconnect", description="Force la reconnexion vocale en cas de problème")
-async def reconnect(interaction: discord.Interaction):
-    await interaction.response.defer()
-    
-    # Vérifier si l'utilisateur est dans un canal vocal
-    if interaction.user.voice is None:
-        await interaction.followup.send("🔊 **Vous devez être dans un canal vocal.**")
-        return
-    
-    voice_channel = interaction.user.voice.channel
-    voice_client = interaction.guild.voice_client
-    
-    try:
-        # Déconnecter si connecté
-        if voice_client and voice_client.is_connected():
-            if voice_client.is_playing():
-                voice_client.stop()
-            await voice_client.disconnect()
-            await asyncio.sleep(1)
-        
-        # Reconnecter
-        voice_client = await voice_channel.connect(timeout=15.0, reconnect=False)
-        await interaction.followup.send("✅ **Reconnexion vocale réussie !**")
-        
-    except Exception as e:
-        await interaction.followup.send(f"❌ **Erreur de reconnexion:** {str(e)}")
 
 
 @bot.tree.command(name="queue", description="Affiche la file d'attente")

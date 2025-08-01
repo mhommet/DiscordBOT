@@ -19,14 +19,8 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
-# Bot setup avec slash commands optimisé pour WSL
-bot = commands.Bot(
-    command_prefix="$", 
-    intents=intents,
-    heartbeat_timeout=60.0,
-    guild_ready_timeout=5.0,
-    max_messages=None
-)
+# Bot setup avec slash commands
+bot = commands.Bot(command_prefix="$", intents=intents)
 
 # File d'attente par serveur
 SONG_QUEUES = {}
@@ -50,7 +44,7 @@ def search_youtube(query):
 
 FFMPEG_OPTIONS = {
     "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
-    "options": "-vn -ar 48000 -ac 2 -b:a 96k",
+    "options": "-vn",
 }
 
 # Fonction asynchrone pour éviter le blocage avec pytube
@@ -167,16 +161,13 @@ async def play(interaction: discord.Interaction, recherche: str):
 
     if voice_client is None:
         try:
-            # Configuration spéciale pour WSL
-            voice_client = await voice_channel.connect(timeout=30.0, reconnect=False)
-            await asyncio.sleep(1)  # Attendre stabilisation sur WSL
+            voice_client = await voice_channel.connect(timeout=20.0, reconnect=True)
         except Exception as e:
             await interaction.followup.send(f"❌ **Impossible de se connecter au canal vocal:** {str(e)}")
             return
     elif voice_channel != voice_client.channel:
         try:
             await voice_client.move_to(voice_channel)
-            await asyncio.sleep(0.5)  # Attendre déplacement
         except Exception as e:
             await interaction.followup.send(f"❌ **Impossible de changer de canal vocal:** {str(e)}")
             return

@@ -1,8 +1,7 @@
 discord.py[voice]
 python-dotenv
 random2
-pytube
-requests
+yt-dlp
 PyNaCl
 openai
 gtts

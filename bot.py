@@ -2,10 +2,7 @@ import os
 import discord
 from discord.ext import commands
 from discord import app_commands
-from pytube import YouTube
-from pytube.exceptions import PytubeError
-import requests
-import re
+import yt_dlp
 from collections import deque
 import asyncio
 from dotenv import load_dotenv
@@ -33,66 +30,61 @@ bot = commands.Bot(command_prefix="$", intents=intents)
 # File d'attente par serveur
 SONG_QUEUES = {}
 
-# Simple YouTube search function
-def search_youtube(query):
-    """Recherche YouTube simple via l'API de recherche"""
-    search_url = f"https://www.youtube.com/results?search_query={query.replace(' ', '+')}"
-    try:
-        response = requests.get(search_url, headers={
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }, timeout=10)
-        
-        # Extract video IDs from the response
-        video_ids = re.findall(r'"videoId":"([^"]+)"', response.text)
-        if video_ids:
-            return f"https://www.youtube.com/watch?v={video_ids[0]}"
-    except (requests.RequestException, ValueError, AttributeError):
-        pass
-    return None
+# Configuration yt-dlp moderne
+YDL_OPTIONS = {
+    "format": "bestaudio[ext=webm]/bestaudio/best",
+    "noplaylist": True,
+    "extractaudio": True,
+    "audioformat": "webm",
+    "quiet": True,
+    "no_warnings": True,
+    "ignoreerrors": True,
+    "extractor_args": {
+        "youtube": {
+            "player_client": ["android", "web"],
+            "skip": ["hls"]
+        }
+    }
+}
 
 FFMPEG_OPTIONS = {
     "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
     "options": "-vn",
 }
 
-# Fonction asynchrone pour éviter le blocage avec pytube
+# Fonction asynchrone pour éviter le blocage avec yt-dlp
 async def get_audio_info_async(url_or_query):
     loop = asyncio.get_running_loop()
     return await loop.run_in_executor(None, lambda: _get_audio_info(url_or_query))
 
 def _get_audio_info(url_or_query):
-    """Extrait les informations audio avec pytube"""
+    """Extrait les informations audio avec yt-dlp"""
     try:
         # Si ce n'est pas une URL YouTube, on fait une recherche
         if not url_or_query.startswith('http'):
-            url = search_youtube(url_or_query)
-            if not url:
-                return None
+            query = f"ytsearch1:{url_or_query}"
         else:
-            url = url_or_query
+            query = url_or_query
         
-        # Utiliser pytube pour extraire les infos
-        yt = YouTube(url)
-        
-        # Obtenir le meilleur stream audio
-        audio_stream = yt.streams.filter(only_audio=True, file_extension='webm').first()
-        if not audio_stream:
-            audio_stream = yt.streams.filter(only_audio=True).first()
-        
-        if not audio_stream:
-            return None
+        # Utiliser yt-dlp pour extraire les infos
+        with yt_dlp.YoutubeDL(YDL_OPTIONS) as ydl:
+            info = ydl.extract_info(query, download=False)
             
-        return {
-            'url': audio_stream.url,
-            'title': yt.title,
-            'duration': yt.length
-        }
+            # Si c'est une recherche, prendre le premier résultat
+            if 'entries' in info and info['entries']:
+                info = info['entries'][0]
+            
+            if not info:
+                return None
+                
+            return {
+                'url': info.get('url'),
+                'title': info.get('title', 'Sans titre'),
+                'duration': info.get('duration', 0)
+            }
         
-    except PytubeError as e:
-        print(f"Erreur pytube: {e}")
-        return None
-    except (requests.RequestException, ValueError, AttributeError) as e:
-        print(f"Erreur générale: {e}")
+    except Exception as e:
+        print(f"Erreur yt-dlp: {e}")
         return None
 
 
@@ -190,7 +182,7 @@ async def play(interaction: discord.Interaction, recherche: str):
 
         audio_url = result["url"]
         title = result["title"]
-    except (PytubeError, requests.RequestException, ValueError, AttributeError) as e:
+    except Exception as e:
         await interaction.followup.send(f"❌ **Erreur lors de la recherche:** {str(e)}")
         return
 

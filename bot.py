@@ -11,6 +11,9 @@ from dotenv import load_dotenv
 load_dotenv()
 TOKEN = os.getenv("TOKEN")
 
+# Print de la version de discord.py
+print("Version de discord.py:", discord.__version__)
+
 # Vérification du token
 if not TOKEN:
     print("❌ ERREUR: Token Discord manquant!")
@@ -160,11 +163,23 @@ async def play(interaction: discord.Interaction, recherche: str):
     voice_client = interaction.guild.voice_client
 
     if voice_client is None:
-        try:
-            voice_client = await voice_channel.connect(timeout=20.0, reconnect=True)
-        except Exception as e:
-            await interaction.followup.send(f"❌ **Impossible de se connecter au canal vocal:** {str(e)}")
-            return
+        # Workaround pour le bug Discord 4006 global (affecte tous les langages)
+        # Basé sur https://github.com/discord-net/Discord.Net/issues/3154
+        max_retries = 5
+        for attempt in range(max_retries):
+            try:
+                # Timeout court pour forcer Discord à utiliser un autre endpoint
+                timeout = 6.0 + (attempt * 2)  # 6s, 8s, 10s, 12s, 14s
+                voice_client = await voice_channel.connect(timeout=timeout, reconnect=True)
+                print(f"✅ Connexion vocale réussie (tentative {attempt + 1})")
+                break
+            except Exception as e:
+                print(f"❌ Tentative {attempt + 1}/{max_retries}: {str(e)}")
+                if attempt == max_retries - 1:
+                    await interaction.followup.send(f"❌ **Connexion vocale impossible après {max_retries} tentatives**\n💡 **Bug Discord 4006 global** - Réessayez dans quelques minutes")
+                    return
+                # Délai progressif entre les tentatives
+                await asyncio.sleep(1.5 + attempt * 0.5)
     elif voice_channel != voice_client.channel:
         try:
             await voice_client.move_to(voice_channel)

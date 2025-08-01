@@ -1,0 +1,9 @@
+# Netscape HTTP Cookie File
+# This is a generated file! Do not edit.
+
+.youtube.com	TRUE	/	TRUE	1767139374	__Secure-1PSID	g.a000ywhrXtgxe3G0rSden7Q-demKDJCKNkKNMq4WvDkgy7SE-5xFo36DcI1RTD_6DVPtayujEAACgYKAY8SARUSFQHGX2Miv8b-4n-zujc_WvOLS-gNTBoVAUF8yKod0bpp7yIhxXJ8GzR17fDF0076
+.youtube.com	TRUE	/	TRUE	1767139374	__Secure-3PSID	g.a000ywhrXtgxe3G0rSden7Q-demKDJCKNkKNMq4WvDkgy7SE-5xFwCWhCPlRcDadfcSartq9LQACgYKAaMSARUSFQHGX2MicBstNZ2Gbjon2IlxoX1odBoVAUF8yKrVyTX8NmcGvNXQpQFiocuB0076
+.youtube.com	TRUE	/	FALSE	1767139374	APISID	uXq70flsWc8qXklt/AUrsyI6mxbtt9d5nd
+.youtube.com	TRUE	/	TRUE	1767139374	__Secure-1PAPISID	MSHDEEZYhaXdcfq4/A5urAPdlcDQ0V1_Br
+.youtube.com	TRUE	/	TRUE	1767139374	__Secure-3PAPISID	MSHDEEZYhaXdcfq4/A5urAPdlcDQ0V1_Br
+.youtube.com	TRUE	/	TRUE	1738175970	__Secure-YEC	CgtlXy0yTTVlUjc2byjNqqnEBjInCgJGUhIhEh0SGwsMDg8QERITFBUWFxgZGhscHR4fICEiIyQlJiBI

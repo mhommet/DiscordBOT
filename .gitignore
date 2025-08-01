@@ -5,3 +5,4 @@ start_bot.vbs
 .idea/*
 .venv/*
 .vscode/*
+venv/*

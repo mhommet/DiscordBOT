@@ -1,8 +1,9 @@
-discord
+discord.py[voice]
 python-dotenv
 random2
-yt-dlp==2024.2.29.232658.dev0
-PyNaCl==1.4.0
+pytube
+requests
+PyNaCl
 openai
 gtts
 pydub

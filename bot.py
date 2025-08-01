@@ -33,6 +33,12 @@ bot = commands.Bot(command_prefix="$", intents=intents)
 # File d'attente par serveur
 SONG_QUEUES = {}
 
+# Timers de déconnexion automatique par serveur
+DISCONNECT_TIMERS = {}
+
+# Délai avant déconnexion automatique (en secondes)
+AUTO_DISCONNECT_DELAY = 300  # 5 minutes
+
 # Configuration yt-dlp moderne
 YDL_OPTIONS = {
     "format": "bestaudio[ext=webm]/bestaudio/best",
@@ -54,6 +60,66 @@ FFMPEG_OPTIONS = {
     "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 2",
     "options": "-vn -bufsize 64k",
 }
+
+# Fonctions de gestion de la déconnexion automatique
+def cancel_disconnect_timer(guild_id):
+    """Annule le timer de déconnexion pour un serveur"""
+    if guild_id in DISCONNECT_TIMERS:
+        DISCONNECT_TIMERS[guild_id].cancel()
+        del DISCONNECT_TIMERS[guild_id]
+        print(f"⏹️ Timer de déconnexion annulé pour {guild_id}")
+
+async def auto_disconnect(guild_id):
+    """Déconnecte automatiquement le bot après inactivité"""
+    try:
+        await asyncio.sleep(AUTO_DISCONNECT_DELAY)
+        
+        # Vérifier si le bot est encore connecté et inactif
+        guild = bot.get_guild(int(guild_id))
+        if guild and guild.voice_client:
+            voice_client = guild.voice_client
+            
+            # Vérifier si vraiment inactif (pas de musique + queue vide)
+            if (not voice_client.is_playing() and 
+                not voice_client.is_paused() and 
+                (guild_id not in SONG_QUEUES or len(SONG_QUEUES[guild_id]) == 0)):
+                
+                # Nettoyer la queue
+                if guild_id in SONG_QUEUES:
+                    SONG_QUEUES[guild_id].clear()
+                
+                # Déconnexion
+                await voice_client.disconnect()
+                print(f"🚪 Déconnexion automatique: inactivité de {AUTO_DISCONNECT_DELAY//60} minutes")
+                
+                # Trouver un canal pour envoyer le message
+                for channel in guild.text_channels:
+                    if channel.permissions_for(guild.me).send_messages:
+                        try:
+                            await channel.send(f"🚪 **Déconnexion automatique** après {AUTO_DISCONNECT_DELAY//60} minutes d'inactivité.")
+                            break
+                        except:
+                            continue
+        
+        # Nettoyer le timer
+        if guild_id in DISCONNECT_TIMERS:
+            del DISCONNECT_TIMERS[guild_id]
+            
+    except asyncio.CancelledError:
+        # Timer annulé (normal)
+        pass
+    except Exception as e:
+        print(f"Erreur déconnexion auto: {e}")
+
+def start_disconnect_timer(guild_id):
+    """Démarre un timer de déconnexion automatique"""
+    # Annuler l'ancien timer s'il existe
+    cancel_disconnect_timer(guild_id)
+    
+    # Créer un nouveau timer
+    timer = asyncio.create_task(auto_disconnect(guild_id))
+    DISCONNECT_TIMERS[guild_id] = timer
+    print(f"⏰ Timer de déconnexion démarré: {AUTO_DISCONNECT_DELAY//60} minutes")
 
 # Fonction asynchrone pour éviter le blocage avec yt-dlp
 async def get_audio_info_async(url_or_query):
@@ -123,6 +189,9 @@ async def play_next_song(voice_client, guild_id, channel):
             return
             
         if SONG_QUEUES[guild_id]:
+            # Annuler le timer de déconnexion puisqu'on a de la musique
+            cancel_disconnect_timer(guild_id)
+            
             audio_url, title = SONG_QUEUES[guild_id].popleft()
 
             source = discord.FFmpegPCMAudio(audio_url, **FFMPEG_OPTIONS)
@@ -135,7 +204,10 @@ async def play_next_song(voice_client, guild_id, channel):
 
             voice_client.play(source, after=after_play)
             await channel.send(f"🎵 **En cours de lecture:** {title}")
-        # Ne plus déconnecter automatiquement quand la queue est vide
+        else:
+            # Queue vide - démarrer le timer de déconnexion automatique
+            start_disconnect_timer(guild_id)
+            await channel.send(f"📭 **File d'attente terminée** - Déconnexion automatique dans {AUTO_DISCONNECT_DELAY//60} minutes")
     except Exception as e:
         print(f"Erreur dans play_next_song: {e}")
         if voice_client.is_connected():
@@ -206,6 +278,9 @@ async def play(interaction: discord.Interaction, recherche: str):
     if SONG_QUEUES.get(guild_id) is None:
         SONG_QUEUES[guild_id] = deque()
 
+    # Annuler le timer de déconnexion puisqu'on ajoute de la musique
+    cancel_disconnect_timer(guild_id)
+
     SONG_QUEUES[guild_id].append((audio_url, title))
 
     if voice_client.is_playing() or voice_client.is_paused():
@@ -268,22 +343,10 @@ async def stop(interaction: discord.Interaction):
     if voice_client.is_playing() or voice_client.is_paused():
         voice_client.stop()
 
-    await interaction.response.send_message("⏹️ **Arrêt de la lecture ! Utilisez /leave pour me déconnecter.**")
+    # Démarrer le timer de déconnexion automatique
+    start_disconnect_timer(guild_id_str)
 
-
-@bot.tree.command(name="leave", description="Déconnecte le bot du canal vocal")
-async def leave(interaction: discord.Interaction):
-    voice_client = interaction.guild.voice_client
-
-    if not voice_client or not voice_client.is_connected():
-        return await interaction.response.send_message("❌ **Je ne suis pas connecté à un canal vocal.**")
-
-    guild_id_str = str(interaction.guild_id)
-    if guild_id_str in SONG_QUEUES:
-        SONG_QUEUES[guild_id_str].clear()
-
-    await voice_client.disconnect()
-    await interaction.response.send_message("👋 **Déconnexion du canal vocal !**")
+    await interaction.response.send_message(f"⏹️ **Arrêt de la lecture !** Déconnexion automatique dans {AUTO_DISCONNECT_DELAY//60} minutes.")
 
 
 @bot.tree.command(name="queue", description="Affiche la file d'attente")
@@ -313,6 +376,11 @@ async def leave(interaction: discord.Interaction):
         return
 
     guild_id_str = str(interaction.guild_id)
+    
+    # Annuler le timer de déconnexion
+    cancel_disconnect_timer(guild_id_str)
+    
+    # Nettoyer la queue
     if guild_id_str in SONG_QUEUES:
         SONG_QUEUES[guild_id_str].clear()
 

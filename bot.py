@@ -163,23 +163,24 @@ async def play(interaction: discord.Interaction, recherche: str):
     voice_client = interaction.guild.voice_client
 
     if voice_client is None:
-        # Workaround pour le bug Discord 4006 global (affecte tous les langages)
-        # Basé sur https://github.com/discord-net/Discord.Net/issues/3154
-        max_retries = 5
+        # Workaround optimisé pour le bug Discord 4006 global
+        # Force Discord à changer d'endpoint rapidement
+        max_retries = 4
         for attempt in range(max_retries):
             try:
-                # Timeout court pour forcer Discord à utiliser un autre endpoint
-                timeout = 6.0 + (attempt * 2)  # 6s, 8s, 10s, 12s, 14s
+                # Timeouts très courts pour forcer le changement d'endpoint rapidement
+                timeout = 4.0 + (attempt * 1.5)  # 4s, 5.5s, 7s, 8.5s
+                print(f"🔄 Tentative connexion {attempt + 1}/{max_retries} (timeout: {timeout}s)")
                 voice_client = await voice_channel.connect(timeout=timeout, reconnect=True)
-                print(f"✅ Connexion vocale réussie (tentative {attempt + 1})")
+                print(f"✅ Connexion vocale réussie ! (tentative {attempt + 1})")
                 break
             except Exception as e:
-                print(f"❌ Tentative {attempt + 1}/{max_retries}: {str(e)}")
+                print(f"❌ Tentative {attempt + 1}: {str(e)[:100]}...")
                 if attempt == max_retries - 1:
-                    await interaction.followup.send(f"❌ **Connexion vocale impossible après {max_retries} tentatives**\n💡 **Bug Discord 4006 global** - Réessayez dans quelques minutes")
+                    await interaction.followup.send(f"❌ **Connexion impossible après {max_retries} tentatives**\n💡 **Bug Discord global** - Endpoint `c-cdg11` défaillant, réessayez")
                     return
-                # Délai progressif entre les tentatives
-                await asyncio.sleep(1.5 + attempt * 0.5)
+                # Délai court pour forcer changement d'endpoint
+                await asyncio.sleep(0.8 + attempt * 0.3)
     elif voice_channel != voice_client.channel:
         try:
             await voice_client.move_to(voice_channel)

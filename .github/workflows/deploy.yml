@@ -26,7 +26,13 @@ jobs:
       - name: Rebuild and restart the container
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+            # Aller dans le dossier du projet
             cd ~/services/discordbot
+
+            # Copier le .env depuis le dossier parent
+            cp ../.env .env
+
+            # Rebuild et relancer
             docker compose down
             docker compose build
             docker compose up -d
